@@ -1,4 +1,4 @@
-# Data Contract Creator
+# OpenAI Data Contract Creator
 
 This is a web application built in Rust using the Yew framework and WebAssembly. It generates Dash Platform data contract JSON schemas based on user-provided prompts. The application interacts with the OpenAI API to generate the schema, and then validates it using Dash Platform Protocol (DPP).
 
