@@ -1,4 +1,4 @@
-# Data Contract Creator
+# Original Data Contract Creator
 
 This is a simple web app written in Rust using the [Yew](https://yew.rs/) framework for generating, editing, and validating data contract schemas for Dash Platform.
 
