@@ -1,4 +1,4 @@
-# Dash Platform Data Contract Creator
+# Dash Platform Data Contract Creators
 There are two apps here: original and openai. Both are meant to help users create and edit Dash Platform data contracts. Additionally, the data contracts are validated again Dash Platform Protocol, so users can save money by validating before submitting to Dash Platform. Both are web applications built in Rust using the Yew framework and WebAssembly.
 
 ## openai
