@@ -4,15 +4,15 @@ This is a web application built in Rust using the Yew framework and WebAssembly.
 
 ## Prerequisites
 
-Yew environment:
-
-1. Install WebAssembly target: `rustup target add wasm32-unknown-unknown`
-2. Install Trunk: `cargo install --locked trunk`
-
 App:
 
 1. **Rust:** Follow the instructions on the [Rust website](https://www.rust-lang.org/tools/install) to install the Rust toolchain on your machine.
 2. **[OpenAI API key](https://beta.openai.com/signup/):** Required to interact with the OpenAI API. Be sure to keep it safe.
+
+Yew environment:
+
+1. Install WebAssembly target: `rustup target add wasm32-unknown-unknown`
+2. Install Trunk: `cargo install --locked trunk`
 
 ## Installation
 
