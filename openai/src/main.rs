@@ -1,31 +1,11 @@
 use std::{sync::Arc, collections::HashSet};
-
 use dpp::{prelude::Identifier, Convertible, consensus::ConsensusError};
 use yew::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
-/// The main struct that holds the prompt and the schema
-pub struct App {
-    prompt: String,
-    schema: String,
-    temp_prompt: Option<String>,
-    history: Vec<String>,
-    loading: bool,
-    error_messages: Vec<String>,
-}
-
-pub enum Msg {
-    /// Updates App.prompt onchange
-    UpdatePrompt(String),
-    /// Sends prompt to OpenAI which generates a schema onclick
-    GenerateSchema,
-    /// Takes a schema and sets to App.schema
-    ReceiveSchema(Result<String, anyhow::Error>),
-    /// Clear the input box
-    ClearInput,
-}
+const OPENAI_API_KEY: &str = // your key here;
 
 // Prepended to the prompt if App.schema is empty
 const FIRST_PROMPT_PRE: &str = r#"
@@ -76,6 +56,26 @@ Only return a formatted JSON schema. Do not explain anything or return anything 
 
 ";
 
+/// The main struct that holds the prompt and the schema
+pub struct App {
+    prompt: String,
+    schema: String,
+    temp_prompt: Option<String>,
+    history: Vec<String>,
+    loading: bool,
+    error_messages: Vec<String>,
+}
+
+pub enum Msg {
+    /// Updates App.prompt onchange
+    UpdatePrompt(String),
+    /// Sends prompt to OpenAI which generates a schema onclick
+    GenerateSchema,
+    /// Takes a schema and sets to App.schema
+    ReceiveSchema(Result<String, anyhow::Error>),
+    /// Clear the input box
+    ClearInput,
+}
 
 impl App {
     /// Displays schema if not empty, else displays nothing
@@ -290,7 +290,8 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
 
     let mut opts = RequestInit::new();
     let headers = web_sys::Headers::new().unwrap();
-    headers.append("Authorization", "Bearer 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").unwrap();
+
+    headers.append("Authorization", &format!("Bearer {}", OPENAI_API_KEY)).unwrap();
     headers.append("Content-Type", "application/json").unwrap();
 
     opts.method("POST");
