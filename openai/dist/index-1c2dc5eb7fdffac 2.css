@@ -1,0 +1,135 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito&display=swap");
+body {
+  margin: 0;
+  margin-bottom: 100px;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background-color: #f2f2f2;
+  font-family: "Nunito", sans-serif;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+}
+.container .top-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.container .logo {
+  width: 200px;
+  height: 100px;
+}
+.container .header {
+  text-align: center;
+  margin-top: 0px;
+}
+.container .content-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1;
+  width: 66.67%;
+  max-width: 800px;
+}
+.container .input-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+.container .form-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.container .input-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+.container input {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+.container input:focus {
+  border: 1px solid #008de4;
+  outline: none;
+}
+.container button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #008de4;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+}
+.container .loader {
+  display: flex;
+  margin-top: 70px;
+  justify-content: center;
+  align-items: center;
+  height: 60px;
+}
+.container .loader .dot {
+  background-color: #008de4;
+  width: 15px;
+  height: 15px;
+  margin: 0 5px;
+  border-radius: 50%;
+  animation: bounce 1s ease-in-out infinite;
+}
+.container .loader .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.container .loader .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.container .validation-container {
+  margin-top: 20px;
+}
+.container .result-container {
+  width: 100%;
+}
+.container .passed-text {
+  color: #008de4;
+}
+.container .error-text {
+  color: red;
+}
+.container pre {
+  margin-top: 20px;
+  padding: 10px;
+  font-size: 14px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow-x: auto;
+}
