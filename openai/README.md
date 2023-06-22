@@ -23,29 +23,9 @@ Yew environment:
     cd data-contract-creator/openai
     ```
 
-2. Set your OpenAI API key as an environment variable:
+2. Add your OpenAI API key:
 
-    In Unix or Linux:
-
-    ```bash
-    export OPENAI_API_KEY=your-openai-api-key
-    ```
-
-    In Windows CMD:
-
-    ```cmd
-    set OPENAI_API_KEY=your-openai-api-key
-    ```
-
-    In Windows powershell:
-
-    ```powershell
-    $Env:OPENAI_API_KEY = "your-openai-api-key"
-    ```
-
-    Replace **`your-openai-api-key`** with your actual OpenAI API key.
-
-    Please note, if you set the environment variable in the terminal, it will only be available for that session. If you open a new terminal window, you'll have to set it again. To set it permanently, you can add the export line to your **`.bashrc`**, **`.zshrc`**, or equivalent file.
+    In src/main.rs, set the OPENAI_API_KEY constant to your api key.
 
 3. **Mac users** may need to run the following commands if they have issues compiling certain libraries such as secp256k1-sys:
     ```
