@@ -1,0 +1,276 @@
+/* theme */
+@import url("https://fonts.googleapis.com/css2?family=Nunito&display=swap");
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 20px;
+  padding-top: 5px;
+  min-height: 100vh;
+}
+
+/* General components */
+input[type=text] {
+  border: 2px solid #b6b6b6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  width: 50%;
+}
+input[type=text]:focus {
+  outline: none;
+  border-color: #008de4;
+}
+input[type=text].error {
+  border-color: red;
+}
+
+input[type=text2] {
+  border: 2px solid #b6b6b6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  width: 90%;
+}
+input[type=text2]:focus {
+  outline: none;
+  border-color: #008de4;
+}
+input[type=text2].error {
+  border-color: red;
+}
+
+input[type=text3] {
+  border: 2px solid #b6b6b6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  max-width: 100%;
+  width: 90%;
+}
+input[type=text3]:focus {
+  outline: none;
+  border-color: #008de4;
+}
+input[type=text3].error {
+  border-color: red;
+}
+
+input[type=text4] {
+  border: 2px solid #b6b6b6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  max-width: 100%;
+  width: 90%;
+}
+input[type=text4]:focus {
+  outline: none;
+  border-color: #008de4;
+}
+input[type=text4].error {
+  border-color: red;
+}
+
+input[type=checkbox] {
+  width: 100px;
+}
+
+input[type=number] {
+  border: 2px solid #b6b6b6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  width: 90%;
+}
+input[type=number]:focus {
+  outline: none;
+  border-color: #008de4;
+}
+input[type=number].error {
+  border-color: red;
+}
+
+select {
+  width: 100%;
+}
+
+/* Buttons styles */
+.button {
+  border: none;
+  background-color: #008de4;
+  color: rgb(233, 233, 233);
+  padding: 10px 20px;
+  border-radius: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+.button:hover {
+  cursor: pointer;
+}
+
+.button2 {
+  border: none;
+  background-color: rgb(233, 233, 233);
+  padding: 10px 20px;
+  border-radius: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+.button2:hover {
+  cursor: pointer;
+}
+
+.button-primary {
+  background-color: #008de4;
+  color: rgb(233, 233, 233);
+  font-size: 1.2em;
+}
+
+.button-import {
+  border: none;
+  background-color: #008de4;
+  color: rgb(233, 233, 233);
+  padding: 10px 20px;
+  border-radius: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  width: 80px;
+  flex-direction: row;
+  align-self: right;
+}
+.button-import:hover {
+  cursor: pointer;
+}
+
+.button-clear {
+  border: none;
+  background-color: rgb(233, 233, 233);
+  padding: 10px 20px;
+  border-radius: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  width: 80px;
+  flex-direction: row;
+  align-self: right;
+}
+.button-clear:hover {
+  cursor: pointer;
+}
+
+/* Layout */
+main {
+  font-family: "Nunito", sans-serif;
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  justify-content: top;
+  height: 100%;
+  width: 100%;
+}
+
+.table {
+  align-items: left;
+  width: 100%;
+}
+
+.error-text {
+  color: red;
+}
+
+.passed-text {
+  color: #008de4;
+}
+
+.input-container {
+  border: 1px solid black;
+  background-color: whitesmoke;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.output-container {
+  border: 1px solid black;
+  background-color: whitesmoke;
+  padding: 10px;
+  border-radius: 10px;
+  overflow-wrap: break-word;
+}
+
+.indent {
+  padding-left: 20px;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+.column-left {
+  float: left;
+  width: 49%;
+}
+
+.column-right {
+  float: right;
+  width: 49%;
+}
+
+.header {
+  text-align: center;
+  margin-top: 0px;
+}
+
+.logo {
+  align-self: center;
+  margin-top: 30px;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  padding-bottom: 30px;
+}
+
+.note {
+  color: red;
+}
+
+.footnotes {
+  padding-bottom: 50px;
+}
+
+.textarea {
+  width: 99%;
+  height: 200px;
+}
+
+.text-area-subtext {
+  text-align: right;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.input-column,
+.select-column {
+  display: flex;
+  align-items: center;
+}
+
+.label-column {
+  display: flex;
+  align-items: center;
+  padding-right: 10px;
+}
+
+.instructions {
+  margin-bottom: 0px;
+  margin-left: 30px;
+  margin-right: 30px;
+}
+
+.instructions-text {
+  margin-left: 30px;
+  margin-right: 30px;
+}
