@@ -28,6 +28,11 @@ jobs:
         toolchain: stable
         target: wasm32-unknown-unknown
 
+    - name: Setup Cargo cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: rust-cargo
+
     - name: Build
       run: |
         cd original
