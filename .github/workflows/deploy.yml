@@ -35,8 +35,8 @@ jobs:
         workspaces: original
 
     - name: Build
+      working-directory: original
       run: |
-        cd original
         cargo install --locked trunk
         cargo install wasm-pack
         wasm-pack build --target web --out-name wasm --out-dir ./static
