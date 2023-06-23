@@ -12,6 +12,8 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      WORKSPACE: original
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -32,10 +34,10 @@ jobs:
       uses: Swatinem/rust-cache@v2
       with:
         shared-key: rust-cargo
-        workspaces: original
+        workspaces: ${{ env.WORKSPACE }}
 
     - name: Build
-      working-directory: original
+      working-directory: ${{ env.WORKSPACE }}
       run: |
         cargo install --locked trunk
         cargo install wasm-pack
@@ -43,7 +45,7 @@ jobs:
 
     - name: Copy site to s3 with the AWS CLI
       run: |
-        aws --region ${{ secrets.AWS_REGION }} s3 sync --acl private original/static/ s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PREFIX }}/
+        aws --region ${{ secrets.AWS_REGION }} s3 sync --acl private $WORKSPACE/static/ s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PREFIX }}/
 
     - name: Request CloudFront invalidation of all objects
       run: |
