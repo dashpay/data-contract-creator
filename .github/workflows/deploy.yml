@@ -40,12 +40,11 @@ jobs:
       working-directory: ${{ env.WORKSPACE }}
       run: |
         cargo install --locked trunk
-        cargo install wasm-pack
-        wasm-pack build --target web --out-name wasm --out-dir ./static
+        trunk build --release
 
     - name: Copy site to s3 with the AWS CLI
       run: |
-        aws --region ${{ secrets.AWS_REGION }} s3 sync --acl private $WORKSPACE/static/ s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PREFIX }}/
+        aws --region ${{ secrets.AWS_REGION }} s3 sync --acl private $WORKSPACE/dist/ s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PREFIX }}/
 
     - name: Request CloudFront invalidation of all objects
       run: |
