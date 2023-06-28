@@ -1,51 +1,59 @@
-# Original Data Contract Creator
+# OpenAI Data Contract Creator
 
-This is a simple web app written in Rust using the [Yew](https://yew.rs/) framework for generating, editing, and validating data contract schemas for Dash Platform.
+This is a web application built in Rust using the Yew framework and WebAssembly. It generates Dash Platform data contract JSON schemas based on user-provided prompts. The application interacts with the OpenAI API to generate the schema, and then validates it using Dash Platform Protocol (DPP).
 
-## Features
+## Prerequisites
 
-- Dynamically generate and modify data contract schemas using a web interface
-- Import existing data contract schemas for editing
-- Validate data contract schemas against Dash Platform Protocol rules
+App:
 
-## Setup
+1. **Rust:** Follow the instructions on the [Rust website](https://www.rust-lang.org/tools/install) to install the Rust toolchain on your machine.
+2. **[OpenAI API key](https://beta.openai.com/signup/):** Required to interact with the OpenAI API. Be sure to keep it safe.
 
 Yew environment:
 
 1. Install WebAssembly target: `rustup target add wasm32-unknown-unknown`
 2. Install Trunk: `cargo install --locked trunk`
 
-App:
+## Installation
 
-1. Clone the repository: `git clone https://github.com/pauldelucia/data-contract-creator.git`
-2. **Mac users** may need to run the following commands if they have issues compiling certain libraries such as secp256k1-sys:
-```
-export AR_PATH=$(command -v llvm-ar)
-export CLANG_PATH=$(command -v clang)
-export AR=${AR_PATH} CC=${CLANG_PATH} ${BUILD_COMMAND}
-export AR=${AR_PATH} CC=${CLANG_PATH} ${BINDGEN_COMMAND}
-```
-3. Change into the project directory: `cd data-contract-creator`
+1. Clone the repository:
+
+    ```
+    git clone https://github.com/dashpay/data-contract-creator.git
+    cd data-contract-creator/openai
+    ```
+
+2. Add your OpenAI API key:
+
+    In src/main.rs, set the OPENAI_API_KEY constant to your api key.
+
+3. **Mac users** may need to run the following commands if they have issues compiling certain libraries such as secp256k1-sys:
+    ```
+    export AR_PATH=$(command -v llvm-ar)
+    export CLANG_PATH=$(command -v clang)
+    export AR=${AR_PATH} CC=${CLANG_PATH} ${BUILD_COMMAND}
+    export AR=${AR_PATH} CC=${CLANG_PATH} ${BINDGEN_COMMAND}
+    ```
+
 4. Start the app `trunk serve --open`
 
 ## Usage
 
-### Create and Edit a Data Contract
+1. Provide a brief description of a data contract and hit "return" or press the "Generate" button. The app will generate and display a corresponding Dash Platform data contract JSON schema.
 
-1. Use the left-side interface to add document types, properties, and indexes
-2. Click the "Submit" button
-3. View the generated schema and potential validation errors with the right-side interface
+2. If you want to make any adjustments to the schema, simply provide the changes in the input field and press "return" or the "Generate" button again. 
 
-### Import a Data Contract
+## Features
 
-1. If the right-side text area is already populated, click the "Clear" button
-2. Paste a data contract into the right-side text area
-3. Click the "Import" button
-
-## Contributing
-
-Contributions are welcome! Please submit a pull request or open an issue if you encounter any problems or have suggestions for improvement.
+* Utilizes the OpenAI API to generate Dash Platform data contract JSON schemas.
+* Validates the generated schemas using Dash Platform Protocol (DPP).
+* Displays validation errors, if any.
+* Stores and displays a history of user prompts.
 
 ## License
 
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+This project is licensed under the terms of the MIT license.
+
+## Contributions
+
+Contributions are welcome! Please feel free to submit a Pull Request.

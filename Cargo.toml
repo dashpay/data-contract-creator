@@ -1,20 +1,14 @@
 [package]
-name = "data-contract-creator"
+name = "ai-contract-creator"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html 
-
 [dependencies]
 yew = {version="0.20.0", features = ["csr"]}
-serde = "1.0.164"
-serde_json = {version = "1.0.96", features = ["preserve_order"]}
-web-sys = {version="0.3.63", features = ["HtmlSelectElement"]}
+serde_json = "1.0.97"
+wasm-bindgen = "0.2.87"
+web-sys = { version="0.3.64", features=["Clipboard", "Navigator"] }
 wasm-logger = "0.2.0"
-wasm-bindgen = "0.2.86"
+wasm-bindgen-futures = "0.4.37"
+anyhow = "1.0.71"
 dpp = { git="https://github.com/pauldelucia/platform.git", package="dpp", default-features = false, features = ["cbor"] }
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-name = "datacontractcreator"
-path = "src/main.rs"
