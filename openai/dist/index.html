@@ -1,35 +1,9 @@
 <!DOCTYPE html><html><head>
         <meta charset="utf-8">
         <title>Data Contract Creator</title>
-        <link rel="stylesheet" href="/index-1c2dc5eb7fdffac.css">
+        <link rel="stylesheet" href="/index-ebcd4dcc96e39a2a.css">
+        <link rel="icon" href="/dash-favicon-16822a786520d9a3.ico">
     
-<link rel="preload" href="/ai-contract-creator-ef297fe6f36d5e37_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-<link rel="modulepreload" href="/ai-contract-creator-ef297fe6f36d5e37.js"></head>
-<body><script type="module">import init from '/ai-contract-creator-ef297fe6f36d5e37.js';init('/ai-contract-creator-ef297fe6f36d5e37_bg.wasm');</script><script>(function () {
-    var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var url = protocol + '//' + window.location.host + '/_trunk/ws';
-    var poll_interval = 5000;
-    var reload_upon_connect = () => {
-        window.setTimeout(
-            () => {
-                // when we successfully reconnect, we'll force a
-                // reload (since we presumably lost connection to
-                // trunk due to it being killed, so it will have
-                // rebuilt on restart)
-                var ws = new WebSocket(url);
-                ws.onopen = () => window.location.reload();
-                ws.onclose = reload_upon_connect;
-            },
-            poll_interval);
-    };
-
-    var ws = new WebSocket(url);
-    ws.onmessage = (ev) => {
-        const msg = JSON.parse(ev.data);
-        if (msg.reload) {
-            window.location.reload();
-        }
-    };
-    ws.onclose = reload_upon_connect;
-})()
-</script></body></html>
+<link rel="preload" href="/ai-contract-creator-d9ea37828f5b07d4_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/ai-contract-creator-d9ea37828f5b07d4.js"></head>
+<body><script type="module">import init from '/ai-contract-creator-d9ea37828f5b07d4.js';init('/ai-contract-creator-d9ea37828f5b07d4_bg.wasm');</script></body></html>

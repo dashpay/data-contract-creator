@@ -1433,8 +1433,10 @@ impl Component for Model {
         // html
         html! {
             <main class="home">
-            <img class="logo" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
-            <br/><br/>
+            <a class="logo-container" href="https://www.dash.org/platform/">
+                <img class="logo" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
+            </a>
+            <br/>
             <h1 class="header">{"Data Contract Creator"}</h1>
             <h3 class="instructions">{"Instructions:"}</h3>
             <ul class="instructions-text">

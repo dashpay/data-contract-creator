@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
-const OPENAI_API_KEY: &str = // your key here;
+const OPENAI_API_KEY: &str = "your API key here" ;
 
 // Prepended to the prompt if App.schema is empty
 const FIRST_PROMPT_PRE: &str = r#"
@@ -13,50 +13,36 @@ Here is an example of a Dash data contract JSON schema that has one document
 type "note", which has two properties, "message" and "number", and one non-unique index 
 on the "message" property:
 
-{
-  "note": {
-    "type": "object",
-    "indices": [
-      {
-        "name": "message",
-        "properties": [{"message":"asc"}],
-        "unique": false
-      }
-    ],
-    "properties": {
-      "message": {
-        "type": "string"
-      },
-      "number":{
-        "type": "integer"
-      }
-    },
-    "required": ["message"],
-    "additionalProperties": false
-  }
-}
+{"note":{"type":"object","indices":[{"name":"message","properties":[{"message":"asc"}],"unique":false}],"properties":{"message":{"type":"string"},"number":{"type":"integer"}},"required":["message"],"additionalProperties":false}}
 
 Dash Platform data contract JSON schemas must always specify "additionalProperties":false 
-for all objects including properties of type "object". They may have multiple document types, and they may use multiple properties 
-within the same index. Indexes can be unique and they may only have asc sort order. 
-Properties may be objects themselves as well. "maxLength" of properties who are used in an index must be defined and cannot be 
-more than 63.
+for all objects including properties of type "object". They may have multiple document types, 
+and they may use multiple properties within the same index (compound indexes). Compound index properties are formatted like so: ""properties":[{"prop1": "asc"},{"prop2": "asc"}]".
+If an index uses a nested property, it must specify the path, for example "outer_prop.inner_prop" rather than just "inner_prop". 
+Indexes can be unique and they may only have asc sort order. "maxLength" of properties who are 
+used in an index must be defined and cannot be more than 63.
 
 Generate a comprehensive Dash Platform data contract JSON schema using the context below. 
-When formatting your JSON schema, use regular spaces for indentation - do not use tabs or excessive 
-whitespace. The formatted schema should look similar to the example given above. Do not explain 
+When formatting your JSON schema, use 2 spaces for indentation. Don't use tabs or more than 2 spaces. Do not explain 
 anything or return anything else other than a properly formatted JSON schema:
 
 "#;
 
 // Prepended to the prompt if App.schema is empty
-const SECOND_PROMPT_PRE: &str = "
-Make the following changes to this data contract JSON schema. 
+const SECOND_PROMPT_PRE: &str = r#"
+Dash Platform data contract JSON schemas must always specify "additionalProperties":false 
+for all objects including properties of type "object". They may have multiple document types, 
+and they may use multiple properties within the same index (compound indexes). Compound index properties are formatted like so: ""properties":[{"prop1": "asc"},{"prop2": "asc"}]".
+If an index uses a nested property, it must specify the path, for example "outer_prop.inner_prop" rather than just "inner_prop". 
+Indexes can be unique and they may only have asc sort order. "maxLength" of properties who are 
+used in an index must be defined and cannot be more than 63.
+
+Make the following changes to this Dash Platform data contract JSON schema. 
 Only return a formatted JSON schema. Do not explain anything or return anything other than the JSON schema:
 
-";
+"#;
 
-/// The main struct that holds the prompt and the schema
+/// The main struct for the app
 pub struct App {
     prompt: String,
     schema: String,
@@ -73,7 +59,7 @@ pub enum Msg {
     GenerateSchema,
     /// Takes a schema and sets to App.schema
     ReceiveSchema(Result<String, anyhow::Error>),
-    /// Clear the input box
+    /// Clear the input box after submission and response
     ClearInput,
 }
 
@@ -229,7 +215,7 @@ impl Component for App {
                                         if self.schema.is_empty() {
                                             "Briefly describe a data contract."
                                         } else {
-                                            "Describe any adjustments. Refresh the page to start over."
+                                            "Describe any adjustments. Refresh the page to start new."
                                         }
                                     }
                                     oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
@@ -284,7 +270,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
         "model": "text-davinci-003",
         "prompt": prompt,
         "max_tokens": 3000,
-        "temperature": 0.3
+        "temperature": 0.5
     });
     let params = params.to_string();
 
@@ -327,9 +313,21 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     };
     
     let json: serde_json::Value = serde_json::from_str(&text).unwrap();
-    let schema = json["choices"][0]["text"].as_str().unwrap_or("");
+    let schema_text = json["choices"][0]["text"].as_str().unwrap_or("");
 
-    Ok(schema.trim().to_string())
+    let start = schema_text.find('{');
+    let end = schema_text.rfind('}');
+
+    match (start, end) {
+        (Some(start), Some(end)) => {
+            let schema_json = &schema_text[start..=end];
+            match serde_json::from_str::<serde_json::Value>(schema_json) {
+                Ok(_) => Ok(schema_json.to_string()),
+                Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON")),
+            }
+        }
+        _ => Err(anyhow::anyhow!("No valid JSON found in the returned text.")),
+    }
 }
 
 fn main() {

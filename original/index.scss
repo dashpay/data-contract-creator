@@ -225,8 +225,13 @@ pre {
   margin-top: 0px;
 }
 
+.logo-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .logo {
-  align-self: center;
   margin-top: 30px;
 }
 
