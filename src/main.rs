@@ -2,10 +2,115 @@
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serde::{Serialize, Deserialize};
-use yew::{html, Component, Html, Event, InputEvent, FocusEvent, TargetCast};
+use yew::{prelude::*, html, Component, Html, Event, InputEvent, FocusEvent, TargetCast};
 use serde_json::{json, Map, Value};
-use web_sys::HtmlSelectElement;
 use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
+use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::{JsFuture, spawn_local};
+use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement};
+
+const OPENAI_API_KEY: &str = "your key here" ;
+
+// Prepended to the prompt if App.schema is empty
+const FIRST_PROMPT_PRE: &str = r#"
+Here is an example of a Dash data contract JSON schema that has one document 
+type "note", which has two properties, "message" and "number", and one non-unique index 
+on the "message" property:
+
+{"note":{"type":"object","indices":[{"name":"message","properties":[{"message":"asc"}],"unique":false}],"properties":{"message":{"type":"string"},"number":{"type":"integer"}},"required":["message"],"additionalProperties":false}}
+
+Dash Platform data contract JSON schemas must always specify "additionalProperties":false 
+for all objects including properties of type "object". They may have multiple document types, 
+and they may use multiple properties within the same index (compound indexes). Compound index properties are formatted like so: ""properties":[{"prop1": "asc"},{"prop2": "asc"}]".
+If an index uses a nested property, it must specify the path, for example "outer_prop.inner_prop" rather than just "inner_prop". 
+Indexes can be unique and they may only have asc sort order. "maxLength" of properties who are 
+used in an index must be defined and cannot be more than 63.
+
+Generate a comprehensive Dash Platform data contract JSON schema using the context below. 
+When formatting your JSON schema, use 2 spaces for indentation. Don't use tabs or more than 2 spaces. Do not explain 
+anything or return anything else other than a properly formatted JSON schema:
+
+"#;
+
+// Prepended to the prompt if App.schema is empty
+const SECOND_PROMPT_PRE: &str = r#"
+Dash Platform data contract JSON schemas must always specify "additionalProperties":false 
+for all objects including properties of type "object". They may have multiple document types, 
+and they may use multiple properties within the same index (compound indexes). Compound index properties are formatted like so: ""properties":[{"prop1": "asc"},{"prop2": "asc"}]".
+If an index uses a nested property, it must specify the path, for example "outer_prop.inner_prop" rather than just "inner_prop". 
+Indexes can be unique and they may only have asc sort order. "maxLength" of properties who are 
+used in an index must be defined and cannot be more than 63.
+
+Make the following changes to this Dash Platform data contract JSON schema. 
+Only return a formatted JSON schema. Do not explain anything or return anything other than the JSON schema:
+
+"#;
+
+/// Calls OpenAI
+pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
+    let params = serde_json::json!({
+        "model": "text-davinci-003",
+        "prompt": prompt,
+        "max_tokens": 3000,
+        "temperature": 0.5
+    });
+    let params = params.to_string();
+
+    let mut opts = RequestInit::new();
+    let headers = web_sys::Headers::new().unwrap();
+
+    headers.append("Authorization", &format!("Bearer {}", OPENAI_API_KEY)).unwrap();
+    headers.append("Content-Type", "application/json").unwrap();
+
+    opts.method("POST");
+    opts.headers(&headers);
+    opts.body(Some(&JsValue::from_str(&params)));
+    opts.mode(RequestMode::Cors);
+
+    let request = Request::new_with_str_and_init("https://api.openai.com/v1/completions", &opts).unwrap();
+
+    let window = web_sys::window().unwrap();
+    let response = JsFuture::from(window.fetch_with_request(&request)).await;
+    
+    let response = match response {
+        Ok(resp) => resp,
+        Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Fetch request failed".to_string()))),
+    };
+
+    let response: Response = match response.dyn_into() {
+        Ok(resp) => resp,
+        Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to convert JsValue to Response".to_string()))),
+    };
+    
+    let text = JsFuture::from(response.text().unwrap()).await;
+    
+    let text = match text {
+        Ok(txt) => txt,
+        Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to get text from response".to_string()))),
+    };
+
+    let text: String = match text.as_string() {
+        Some(txt) => txt,
+        None => return Err(anyhow::anyhow!("Failed to convert JsValue to String")),
+    };
+    
+    let json: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let schema_text = json["choices"][0]["text"].as_str().unwrap_or("");
+
+    let start = schema_text.find('{');
+    let end = schema_text.rfind('}');
+
+    match (start, end) {
+        (Some(start), Some(end)) => {
+            let schema_json = &schema_text[start..=end];
+            match serde_json::from_str::<serde_json::Value>(schema_json) {
+                Ok(_) => Ok(schema_json.to_string()),
+                Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON")),
+            }
+        }
+        _ => Err(anyhow::anyhow!("No valid JSON found in the returned text.")),
+    }
+}
 
 /// Document type struct
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -100,6 +205,14 @@ struct Model {
     imported_json: String,
     /// DPP validation error messages
     error_messages: Vec<String>,
+
+    // OpenAI
+    prompt: String,
+    schema: String,
+    temp_prompt: Option<String>,
+    history: Vec<String>,
+    loading: bool,
+    error_messages_ai: Vec<String>,
 }
 
 /// Messages from input fields which call the functions to update Model
@@ -162,6 +275,16 @@ enum Msg {
     Import,
     UpdateImportedJson(String),
     Clear,
+
+    // OpenAI
+    /// Updates App.prompt onchange
+    UpdatePrompt(String),
+    /// Sends prompt to OpenAI which generates a schema onclick
+    GenerateSchema,
+    /// Takes a schema and sets to App.schema
+    ReceiveSchema(Result<String, anyhow::Error>),
+    /// Clear the input box after submission and response
+    ClearInput,
 }
 
 /// Sets the validation parameters to default. Used to reset the fields when a 
@@ -1129,13 +1252,60 @@ impl Model {
     
         messages
     }
+
+    // OpenAI
+    fn validate_ai(&mut self) -> Result<Vec<String>, String> {
+        let json_obj: serde_json::Value = match serde_json::from_str(&self.schema) {
+            Ok(json) => json,
+            Err(e) => return Err(format!("Error parsing schema: {}. Suggest refreshing.", e)),
+        };
+    
+        let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
+        let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
+        let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
+        let owner_id = Identifier::random();
+        let contract = match factory.create(owner_id, json_obj.clone().into(), None, None) {
+            Ok(contract) => contract,
+            Err(e) => return Err(format!("Error creating contract: {}", e)),
+        };
+    
+        let results = contract.data_contract.validate(
+            &contract.data_contract.to_cleaned_object().expect("Descriptive error message")
+        );
+        let errors = results.unwrap_or_default().errors;
+    
+        Ok(self.extract_basic_error_messages_ai(&errors))
+    }    
+
+    fn extract_basic_error_messages_ai(&self, errors: &[ConsensusError]) -> Vec<String> {
+        let messages: Vec<String> = errors
+            .iter()
+            .filter_map(|error| {
+                if let ConsensusError::BasicError(inner) = error {
+                    if let dpp::errors::consensus::basic::basic_error::BasicError::JsonSchemaError(json_error) = inner {
+                        Some(format!("JsonSchemaError: {}, Path: {}", json_error.error_summary().to_string(), json_error.instance_path().to_string()))
+                    } else { 
+                        Some(format!("{}", inner)) 
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect();
+    
+        let messages: HashSet<String> = messages.into_iter().collect();
+        let messages: Vec<String> = messages.into_iter().collect();
+    
+        messages
+    }
+    
 }
 
 impl Component for Model {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_ctx: &yew::Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         let mut default_document_type = DocumentType::default();
         default_document_type.properties.push(Property::default());
         Self {
@@ -1143,10 +1313,16 @@ impl Component for Model {
             json_object: vec![],
             imported_json: String::new(),
             error_messages: vec![],
+            prompt: String::new(),
+            schema: String::new(),
+            history: Vec::new(),
+            temp_prompt: None,
+            loading: false,
+            error_messages_ai: Vec::new(),
         }
     }
 
-    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             // General
             Msg::AddDocumentType => {
@@ -1406,11 +1582,73 @@ impl Component for Model {
                 self.json_object = vec![];
                 self.imported_json = String::new();
             }
+            
+            // OpenAI
+            Msg::UpdatePrompt(val) => {
+                self.prompt = val;
+            },
+            Msg::GenerateSchema => {
+                let prompt = if self.schema.is_empty() {
+                    let first_prompt_pre = FIRST_PROMPT_PRE.to_string();
+                    format!("{}{}", first_prompt_pre, self.prompt)
+                } else {
+                    let second_prompt_pre = SECOND_PROMPT_PRE.to_string();
+                    format!("{}{}\n\n{}", second_prompt_pre, self.schema, self.prompt)
+                };
+    
+                // Save the prompt temporarily
+                self.temp_prompt = Some(self.prompt.clone());
+        
+                self.loading = true;
+
+                let callback = _ctx.link().callback(Msg::ReceiveSchema);
+                spawn_local(async move {
+                    let result = call_openai(&prompt).await;
+                    callback.emit(result);
+                });
+    
+                // Clear the input field
+                _ctx.link().send_message(Msg::ClearInput);
+            },
+            Msg::ClearInput => {
+                self.prompt.clear();
+            },
+            Msg::ReceiveSchema(result) => {
+                match result {
+                    Ok(schema) => {
+                        // Get the saved prompt and add it to the history
+                        if let Some(temp_prompt) = self.temp_prompt.take() {
+                            self.history.push(temp_prompt);
+                        }
+            
+                        self.schema = schema.clone();
+                        self.imported_json = schema;
+                        self.parse_imported_json();
+                        self.json_object = Some(self.generate_json_object()).unwrap();
+                        self.error_messages = Some(self.validate()).unwrap();
+                        self.imported_json = String::new();
+        
+                        match self.validate_ai() {
+                            Ok(messages) => self.error_messages_ai = messages,
+                            Err(err) => self.error_messages_ai.push(err),
+                        };
+                    },
+                    Err(err) => {
+                        self.error_messages_ai.push(format!("Error: {:?}", err));
+                    },
+                }
+                self.loading = false;
+            },
         }
         true
     }
 
-    fn view(&self, ctx: &yew::Context<Self>) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
+
+        let onsubmit = ctx.link().callback(|event: SubmitEvent| {
+            event.prevent_default();
+            Msg::GenerateSchema
+        });
 
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
@@ -1433,16 +1671,48 @@ impl Component for Model {
         // html
         html! {
             <main class="home">
-            <a class="logo-container" href="https://www.dash.org/platform/">
-                <img class="logo" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
-            </a>
-            <br/>
-            <h1 class="header">{"Data Contract Creator"}</h1>
-            <h3 class="instructions">{"Instructions:"}</h3>
-            <ul class="instructions-text">
-                <li><div>{"Use the left column to build, edit, and submit a data contract."}</div></li>
-                <li><div>{"Use the right column to copy the generated data contract to your clipboard or import."}</div></li>
-            </ul>
+            <div class="container_ai">
+                <div class="top-section_ai">
+                    <img class="logo_ai" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
+                    <h1 class="header_ai">{"Data Contract Creator"}</h1>
+                </div>
+                <div class="content-container_ai">
+                    <div class="input-container_ai">
+                        <form onsubmit={onsubmit} class="form-container_ai">
+                            <div class="input-button-container_ai">
+                                <input
+                                    placeholder={
+                                        if self.schema.is_empty() {
+                                            "Briefly describe a data contract."
+                                        } else {
+                                            "Describe any adjustments. Refresh the page to start new."
+                                        }
+                                    }
+                                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                                />
+                                <button type="submit">{"Generate"}</button>
+                            </div>
+                        </form>
+                        {
+                            if self.loading {
+                                html! {
+                                    <div class="loader_ai">
+                                        <div class="dot_ai"></div>
+                                        <div class="dot_ai"></div>
+                                        <div class="dot_ai"></div>
+                                    </div>
+                                }
+                            } else {
+                                html! {}
+                            }
+                        }    
+                    </div>
+                    <h3>{if !self.history.is_empty() {"Prompt history:"} else {""}}</h3>
+                    {for self.history.iter().map(|input| html! {
+                        <div>{input}</div>
+                    })}
+                </div>
+            </div>
             <body>
             <div class="column-left">
 
@@ -1473,7 +1743,7 @@ impl Component for Model {
                                 </ul>
                             }
                         } else if self.imported_json.len() == 0 && self.error_messages.len() == 0 &&self.json_object.len() > 0 { 
-                            html! {<p class="passed-text">{"Validation passed ✓"}</p>}
+                            html! {<p class="passed-text">{"DPP validation passing ✓"}</p>}
                         } else {
                             html! {""}
                         }
