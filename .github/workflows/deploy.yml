@@ -38,10 +38,22 @@ jobs:
         cargo install --locked trunk
         trunk build --release
 
-    - name: Copy site to s3 with the AWS CLI
+    - name: Output branch name
+      id: branch_condition
       run: |
-        aws --region ${{ secrets.AWS_REGION }} s3 sync --acl private dist/ s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PREFIX }}/
+        if [ "${GITHUB_REF##*/}" = "master" ]; then
+          echo ::set-output name=branch::""
+        else
+          echo ::set-output name=branch::${GITHUB_REF##*/}
+        fi
 
-    - name: Request CloudFront invalidation of all objects
-      run: |
-        aws --region ${{ secrets.AWS_REGION }} cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths '/*'
+    - name: Debug branch name
+      run: echo ${{ steps.branch_condition.outputs.branch }}
+
+    # - name: Copy site to s3 with the AWS CLI
+    #   run: |
+    #     aws --region ${{ secrets.AWS_REGION }} s3 sync --acl private dist/ s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PREFIX }}/${{  }}
+
+    # - name: Request CloudFront invalidation of all objects
+    #   run: |
+    #     aws --region ${{ secrets.AWS_REGION }} cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths '/*'
