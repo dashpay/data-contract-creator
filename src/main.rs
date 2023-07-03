@@ -7,42 +7,42 @@ use serde_json::{json, Map, Value};
 use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
-use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement};
+use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement, console};
 
 const OPENAI_API_KEY: &str = "your key here" ;
 
 // Prepended to the prompt if App.schema is empty
 const FIRST_PROMPT_PRE: &str = r#"
-Here is an example of a Dash data contract JSON schema that has one document 
-type "note", which has two properties, "message" and "number", and one non-unique index 
-on the "message" property:
+Here is the an example Dash Platform data contract JSON schema. It's for the Dashpay app, which is meant to be similar to Venmo, but for the Dash Platform blockchain. It has two document types: "profile", "contactInfo", and "contactRequest".
 
-{"note":{"type":"object","indices":[{"name":"message","properties":[{"message":"asc"}],"unique":false}],"properties":{"message":{"type":"string"},"number":{"type":"integer"}},"required":["message"],"additionalProperties":false}}
+{"profile":{"type":"object","indices":[{"name":"ownerId","properties":[{"$ownerId":"asc"}],"unique":true},{"name":"ownerIdAndUpdatedAt","properties":[{"$ownerId":"asc"},{"$updatedAt":"asc"}]}],"properties":{"avatarUrl":{"type":"string","format":"uri","maxLength":2048},"avatarHash":{"type":"array","byteArray":true,"minItems":32,"maxItems":32,"description":"SHA256 hash of the bytes of the image specified by avatarUrl"},"avatarFingerprint":{"type":"array","byteArray":true,"minItems":8,"maxItems":8,"description":"dHash the image specified by avatarUrl"},"publicMessage":{"type":"string","maxLength":140},"displayName":{"type":"string","maxLength":25}},"required":["$createdAt","$updatedAt"],"additionalProperties":false},"contactInfo":{"type":"object","indices":[{"name":"ownerIdAndKeys","properties":[{"$ownerId":"asc"},{"rootEncryptionKeyIndex":"asc"},{"derivationEncryptionKeyIndex":"asc"}],"unique":true},{"name":"ownerIdAndUpdatedAt","properties":[{"$ownerId":"asc"},{"$updatedAt":"asc"}]}],"properties":{"encToUserId":{"type":"array","byteArray":true,"minItems":32,"maxItems":32},"rootEncryptionKeyIndex":{"type":"integer","minimum":0},"derivationEncryptionKeyIndex":{"type":"integer","minimum":0},"privateData":{"type":"array","byteArray":true,"minItems":48,"maxItems":2048,"description":"This is the encrypted values of aliasName + note + displayHidden encoded as an array in cbor"}},"required":["$createdAt","$updatedAt","encToUserId","privateData","rootEncryptionKeyIndex","derivationEncryptionKeyIndex"],"additionalProperties":false},"contactRequest":{"type":"object","indices":[{"name":"ownerIdUserIdAndAccountRef","properties":[{"$ownerId":"asc"},{"toUserId":"asc"},{"accountReference":"asc"}],"unique":true},{"name":"ownerIdUserId","properties":[{"$ownerId":"asc"},{"toUserId":"asc"}]},{"name":"userIdCreatedAt","properties":[{"toUserId":"asc"},{"$createdAt":"asc"}]},{"name":"ownerIdCreatedAt","properties":[{"$ownerId":"asc"},{"$createdAt":"asc"}]}],"properties":{"toUserId":{"type":"array","byteArray":true,"minItems":32,"maxItems":32,"contentMediaType":"application/x.dash.dpp.identifier"},"encryptedPublicKey":{"type":"array","byteArray":true,"minItems":96,"maxItems":96},"senderKeyIndex":{"type":"integer","minimum":0},"recipientKeyIndex":{"type":"integer","minimum":0},"accountReference":{"type":"integer","minimum":0},"encryptedAccountLabel":{"type":"array","byteArray":true,"minItems":48,"maxItems":80},"autoAcceptProof":{"type":"array","byteArray":true,"minItems":38,"maxItems":102},"coreHeightCreatedAt":{"type":"integer","minimum":1}},"required":["$createdAt","toUserId","encryptedPublicKey","senderKeyIndex","recipientKeyIndex","accountReference"],"additionalProperties":false}}
+The following requirements must be followed in Dash Platform data contracts: 
+ - Indexes may only have "asc" sort order. 
+ - All "array" properties must specify ""byteArray": true". 
+ - All "string" properties that are used in indexes must specify "maxLength", and it cannot be more than 63. 
+ - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255. 
+ - All "object" properties must define at least 1 property within themselves. 
 
-Dash Platform data contract JSON schemas must always specify "additionalProperties":false 
-for all objects including properties of type "object". They may have multiple document types, 
-and they may use multiple properties within the same index (compound indexes). Compound index properties are formatted like so: ""properties":[{"prop1": "asc"},{"prop2": "asc"}]".
-If an index uses a nested property, it must specify the path, for example "outer_prop.inner_prop" rather than just "inner_prop". 
-Indexes can be unique and they may only have asc sort order. "maxLength" of properties who are 
-used in an index must be defined and cannot be more than 63.
-
-Generate a comprehensive Dash Platform data contract JSON schema using the context below. 
-When formatting your JSON schema, use 2 spaces for indentation. Don't use tabs or more than 2 spaces. Do not explain 
-anything or return anything else other than a properly formatted JSON schema:
+Note that not all properties need to be included in the "required" array.
+ 
+Given this background, generate a highly comprehensive data contract JSON schema using the context below. 
+Include descriptions for every document type and property. Be creative and extensive and utilize multiple document types. 
+Do not explain anything or return anything else other than a properly formatted JSON schema:
 
 "#;
 
 // Prepended to the prompt if App.schema is empty
 const SECOND_PROMPT_PRE: &str = r#"
-Dash Platform data contract JSON schemas must always specify "additionalProperties":false 
-for all objects including properties of type "object". They may have multiple document types, 
-and they may use multiple properties within the same index (compound indexes). Compound index properties are formatted like so: ""properties":[{"prop1": "asc"},{"prop2": "asc"}]".
-If an index uses a nested property, it must specify the path, for example "outer_prop.inner_prop" rather than just "inner_prop". 
-Indexes can be unique and they may only have asc sort order. "maxLength" of properties who are 
-used in an index must be defined and cannot be more than 63.
+The following requirements must be followed for Dash Platform data contracts: 
+ - Indexes may only have "asc" sort order. 
+ - All "array" properties must specify ""byteArray": true". 
+ - All "string" properties that are used in indexes must specify "maxLength", which cannot be more than 63. 
+ - All "array" properties that are used in indexes must specify "maxItems", which must be less than or equal to 255. 
+ - All "object" properties must define at least 1 property within themselves.
 
 Make the following changes to this Dash Platform data contract JSON schema. 
-Only return a formatted JSON schema. Do not explain anything or return anything other than the JSON schema:
+Note that the highest-level keys in the data contract are called "document types".
+Do not explain anything or return anything else other than a properly formatted JSON schema:
 
 "#;
 
@@ -52,7 +52,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
         "model": "text-davinci-003",
         "prompt": prompt,
         "max_tokens": 3000,
-        "temperature": 0.5
+        "temperature": 0.2
     });
     let params = params.to_string();
 
@@ -89,11 +89,13 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
         Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to get text from response".to_string()))),
     };
 
+    console::log_1(&text);
+
     let text: String = match text.as_string() {
         Some(txt) => txt,
         None => return Err(anyhow::anyhow!("Failed to convert JsValue to String")),
     };
-    
+
     let json: serde_json::Value = serde_json::from_str(&text).unwrap();
     let schema_text = json["choices"][0]["text"].as_str().unwrap_or("");
 
@@ -112,6 +114,27 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     }
 }
 
+/// Model is the umbrella structs that contains all the document types 
+/// for the contract and the vector of strings comprising the json object to be output
+struct Model {
+    /// A vector of document types
+    document_types: Vec<DocumentType>,
+    /// Each full document type is a single string in json_object
+    json_object: Vec<String>,
+    /// A string containing a full data contract
+    imported_json: String,
+    /// DPP validation error messages
+    error_messages: Vec<String>,
+
+    // OpenAI
+    prompt: String,
+    schema: String,
+    temp_prompt: Option<String>,
+    history: Vec<String>,
+    loading: bool,
+    error_messages_ai: Vec<String>,
+}
+
 /// Document type struct
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -120,6 +143,8 @@ struct DocumentType {
     properties: Vec<Property>,
     indices: Vec<Index>,
     required: Vec<String>,
+    created_at_required: bool,
+    updated_at_required: bool,
     additionalProperties: bool,
     comment: String
 }
@@ -131,6 +156,8 @@ impl Default for DocumentType {
             properties: vec![],
             indices: vec![],
             required: vec![],
+            created_at_required: false,
+            updated_at_required: false,
             additionalProperties: false,
             comment: String::new()
         }
@@ -154,6 +181,7 @@ struct Property {
     byte_array: Option<bool>,  // For Array data type
     min_items: Option<u32>,    // For Array data type
     max_items: Option<u32>,    // For Array data type
+    content_media_type: Option<String>,  // For Array data type
     properties: Option<Box<Vec<Property>>>, // For Object data type
     min_properties: Option<u32>, // For Object data type
     max_properties: Option<u32>, // For Object data type
@@ -194,27 +222,6 @@ enum DataType {
     Boolean
 }
 
-/// Model is the umbrella structs that contains all the document types 
-/// for the contract and the vector of strings comprising the json object to be output
-struct Model {
-    /// A vector of document types
-    document_types: Vec<DocumentType>,
-    /// Each full document type is a single string in json_object
-    json_object: Vec<String>,
-    /// A string containing a full data contract
-    imported_json: String,
-    /// DPP validation error messages
-    error_messages: Vec<String>,
-
-    // OpenAI
-    prompt: String,
-    schema: String,
-    temp_prompt: Option<String>,
-    history: Vec<String>,
-    loading: bool,
-    error_messages_ai: Vec<String>,
-}
-
 /// Messages from input fields which call the functions to update Model
 enum Msg {
     // General
@@ -234,22 +241,24 @@ enum Msg {
     UpdateIndexUnique(usize, usize, bool),
     UpdateIndexSorting(usize, usize, usize, String),
     UpdatePropertyRequired(usize, usize, bool),
+    UpdateSystemPropertiesRequired(usize, usize, bool),
     UpdatePropertyDescription(usize, usize, String),
     UpdatePropertyComment(usize, usize, String),
     UpdateIndexProperty(usize, usize, usize, String),
 
     // Optional property parameters
-    UpdateStringPropertyMinLength(usize, usize, u32),
-    UpdateStringPropertyMaxLength(usize, usize, u32),
+    UpdateStringPropertyMinLength(usize, usize, Option<u32>),
+    UpdateStringPropertyMaxLength(usize, usize, Option<u32>),
     UpdateStringPropertyPattern(usize, usize, String),
     UpdateStringPropertyFormat(usize, usize, String),
-    UpdateIntegerPropertyMinimum(usize, usize, i32),
-    UpdateIntegerPropertyMaximum(usize, usize, i32),
-    UpdateArrayPropertyByteArray(usize, usize, bool),
-    UpdateArrayPropertyMinItems(usize, usize, u32),
-    UpdateArrayPropertyMaxItems(usize, usize, u32),
-    UpdateObjectPropertyMinProperties(usize, usize, u32),
-    UpdateObjectPropertyMaxProperties(usize, usize, u32),
+    UpdateIntegerPropertyMinimum(usize, usize, Option<i32>),
+    UpdateIntegerPropertyMaximum(usize, usize, Option<i32>),
+    //UpdateArrayPropertyByteArray(usize, usize, bool),
+    UpdateArrayPropertyMinItems(usize, usize, Option<u32>),
+    UpdateArrayPropertyMaxItems(usize, usize, Option<u32>),
+    UpdateArrayPropertyCMT(usize, usize, String),
+    UpdateObjectPropertyMinProperties(usize, usize, Option<u32>),
+    UpdateObjectPropertyMaxProperties(usize, usize, Option<u32>),
 
     // Recursive properties
     AddRecProperty(usize, usize),
@@ -259,17 +268,18 @@ enum Msg {
     UpdateRecPropertyRequired(usize, usize, usize, bool),
     UpdateRecPropertyDescription(usize, usize, usize, String),
     UpdateRecPropertyComment(usize, usize, usize, String),
-    UpdateStringRecPropertyMinLength(usize, usize, usize, u32),
-    UpdateStringRecPropertyMaxLength(usize, usize, usize, u32),
+    UpdateStringRecPropertyMinLength(usize, usize, usize, Option<u32>),
+    UpdateStringRecPropertyMaxLength(usize, usize, usize, Option<u32>),
     UpdateStringRecPropertyPattern(usize, usize, usize, String),
     UpdateStringRecPropertyFormat(usize, usize, usize, String),
-    UpdateIntegerRecPropertyMaximum(usize, usize, usize, i32),
-    UpdateIntegerRecPropertyMinimum(usize, usize, usize, i32),
-    UpdateArrayRecPropertyByteArray(usize, usize, usize, bool),
-    UpdateArrayRecPropertyMinItems(usize, usize, usize, u32),
-    UpdateArrayRecPropertyMaxItems(usize, usize, usize, u32),
-    UpdateObjectRecPropertyMaxProperties(usize, usize, usize, u32),
-    UpdateObjectRecPropertyMinProperties(usize, usize, usize, u32),
+    UpdateIntegerRecPropertyMaximum(usize, usize, usize, Option<i32>),
+    UpdateIntegerRecPropertyMinimum(usize, usize, usize, Option<i32>),
+    //UpdateArrayRecPropertyByteArray(usize, usize, usize, bool),
+    UpdateArrayRecPropertyMinItems(usize, usize, usize, Option<u32>),
+    UpdateArrayRecPropertyMaxItems(usize, usize, usize, Option<u32>),
+    UpdateArrayRecPropertyCMT(usize, usize, usize, String),
+    UpdateObjectRecPropertyMaxProperties(usize, usize, usize, Option<u32>),
+    UpdateObjectRecPropertyMinProperties(usize, usize, usize, Option<u32>),
 
     // Import
     Import,
@@ -307,9 +317,10 @@ fn default_additional_properties(data_type: &str) -> Property {
         },
         "Array" => Property {
             data_type: DataType::Array,
-            byte_array: None,
+            byte_array: Some(true),
             min_items: None,
             max_items: None,
+            content_media_type: None,
             ..Default::default()
         },
         "Object" => Property {
@@ -357,6 +368,19 @@ impl Model {
                             {for (0..self.document_types[index].properties.len()).map(|i| self.view_property(index, i, ctx))}
                             <tr>
                                 <td><button class="button" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}>{"Add property"}</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <br/>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td><label>{"Require $createdAt:   "}</label></td>
+                                <td><input type="checkbox" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} /></td>
+                            </tr>
+                            <tr>
+                                <td><label>{"Require $updatedAt:   "}</label></td>
+                                <td><input type="checkbox" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} /></td>
                             </tr>
                         </tbody>
                     </table>
@@ -446,11 +470,29 @@ impl Model {
                 <>
                 <tr>
                     <td><label>{"Min length: "}</label></td>
-                    <td><input type="number" value={property.min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringPropertyMinLength(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
+                    <td><input type="number" value={property.min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<u32>().unwrap_or_default())
+                        };
+                        Msg::UpdateStringPropertyMinLength(doc_index, prop_index, num_value)
+                    })} />
+                    </td>
                 </tr>
                 <tr>
                     <td><label>{"Max length: "}</label></td>
-                    <td><input type="number" value={property.max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringPropertyMaxLength(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
+                    <td><input type="number" value={property.max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<u32>().unwrap_or_default())
+                        };
+                        Msg::UpdateStringPropertyMaxLength(doc_index, prop_index, num_value)
+                    })} />
+                    </td>
                 </tr>
                 <tr>
                     <td><label>{"RE2 pattern: "}</label></td>
@@ -466,27 +508,66 @@ impl Model {
                 <>
                 <tr>
                     <td><label>{"Minimum: "}</label></td>
-                    <td><input type="number" value={property.minimum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIntegerPropertyMinimum(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as i32))} /></td>
+                    <td><input type="number" value={property.minimum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<i32>().unwrap_or_default())
+                        };
+                        Msg::UpdateIntegerPropertyMinimum(doc_index, prop_index, num_value)
+                    })} />
+                    </td>
                 </tr>
                 <tr>
                     <td><label>{"Maximum: "}</label></td>
-                    <td><input type="number" value={property.maximum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIntegerPropertyMaximum(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as i32))} /></td>
-                </tr>
+                    <td><input type="number" value={property.maximum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<i32>().unwrap_or_default())
+                        };
+                        Msg::UpdateIntegerPropertyMaximum(doc_index, prop_index, num_value)
+                    })} />
+                    </td>                </tr>
                 </>
             },
             "Array" => html! {
                 <>
-                <tr>
+                /* <tr>
                     <td><label>{"Byte array: "}</label></td>
                     <td><input type="checkbox" checked={property.byte_array.unwrap_or(false)} onchange={ctx.link().callback(move |e: Event| Msg::UpdateArrayPropertyByteArray(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} /></td>
-                </tr>
+                </tr> */
                 <tr>
                     <td><label>{"Min items: "}</label></td>
-                    <td><input type="number" value={property.min_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayPropertyMinItems(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
+                    <td><input type="number" value={property.min_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<u32>().unwrap_or_default())
+                        };
+                        Msg::UpdateArrayPropertyMinItems(doc_index, prop_index, num_value)
+                    })} />
+                    </td>
                 </tr>
                 <tr>
                     <td><label>{"Max items: "}</label></td>
-                    <td><input type="number" value={property.max_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayPropertyMaxItems(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
+                    <td><input type="number" value={property.max_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<u32>().unwrap_or_default())
+                        };
+                        Msg::UpdateArrayPropertyMaxItems(doc_index, prop_index, num_value)
+                    })} />
+                    </td>
+                </tr>
+                <tr>
+                    <td><label>{"Content media type: "}</label></td>
+                    <td><input type="text3" value={property.content_media_type.clone().unwrap_or_default()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayPropertyCMT(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} /></td>
                 </tr>
                 </>
             },
@@ -503,11 +584,29 @@ impl Model {
                 <p><b>{"Optional property parameters:"}</b></p>
                 <tr>
                     <td><label>{"Min properties: "}</label></td>
-                    <td><input type="number" value={property.min_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateObjectPropertyMinProperties(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
+                    <td><input type="number" value={property.min_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<u32>().unwrap_or_default())
+                        };
+                        Msg::UpdateObjectPropertyMinProperties(doc_index, prop_index, num_value)
+                    })} />
+                    </td>
                 </tr>
                 <tr>
                     <td><label>{"Max properties: "}</label></td>
-                    <td><input type="number" value={property.max_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateObjectPropertyMaxProperties(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
+                    <td><input type="number" value={property.max_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                        let num_value = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.parse::<u32>().unwrap_or_default())
+                        };
+                        Msg::UpdateObjectPropertyMaxProperties(doc_index, prop_index, num_value)
+                    })} />
+                    </td>
                 </tr>
                 </>
             },
@@ -609,116 +708,160 @@ impl Model {
     }
 
     fn rec_render_additional_properties(&self, data_type: &String, doc_index: usize, prop_index: usize, recursive_prop_index: usize, ctx: &yew::Context<Self>) -> Html {
+        let properties = self.document_types[doc_index].properties.get(prop_index).and_then(|p| p.properties.as_ref());
         match data_type.as_str() {
             "String" => {
-                if let Some(_props) = &self.document_types[doc_index].properties[prop_index].properties {
-                    html! {
-                        <>
-                        <tr>
-                            <td><label>{"Min length: "}</label></td>
-                            <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyMinLength(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
-                        </tr>
-                        <tr>
-                            <td><label>{"Max length: "}</label></td>
-                            <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyMaxLength(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as u32))} /></td>
-                        </tr>
-                        <tr>
-                            <td><label>{"RE2 pattern: "}</label></td>
-                            <td><input type="text3" oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyPattern(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} /></td>
-                        </tr>
-                        <tr>
-                            <td><label>{"Format: "}</label></td>
-                            <td><input type="text3" oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyFormat(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} /></td>
-                        </tr>
-                        </>
-                    }
-                } else {
-                    html! {}
-                }
-            },
-            "Integer" => {
-                if let Some(_props) = &self.document_types[doc_index].properties[prop_index].properties {
-                    html! {
-                        <>
-                        <tr>
-                            <td><label>{"Minimum: "}</label></td>
-                            <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIntegerRecPropertyMinimum(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as i32))} /></td>
-                        </tr>
-                        <tr>
-                            <td><label>{"Maximum: "}</label></td>
-                            <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIntegerRecPropertyMaximum(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number() as i32))} /></td>
-                        </tr>
-                        </>
-                    }
-                } else {
-                    html! {}
-                }
-            },
-            "Array" => {
-                let properties = self.document_types[doc_index].properties.get(prop_index).and_then(|p| p.properties.as_ref());
-                let byte_array = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.byte_array);
-                let max_items = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.max_items);
-                let min_items = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.min_items);
-            
+                let min_length = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.min_length);
+                let max_length = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.max_length);
+                let pattern = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.pattern.clone());
+                let format = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.format.clone());
                 html! {
                     <>
                     <tr>
-                        <td><label>{"Byte array: "}</label></td>
-                        <td><input type="checkbox" checked={byte_array.unwrap_or(false)} onchange={ctx.link().callback(move |e: Event| Msg::UpdateArrayRecPropertyByteArray(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} /></td>
+                        <td><label>{"Min length: "}</label></td>
+                        <td><input type="number" value={min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<u32>().unwrap_or_default())
+                            };
+                            Msg::UpdateStringRecPropertyMinLength(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
                     </tr>
                     <tr>
-                        <td><label>{"Min items: "}</label></td>
-                        <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number();
-                            let value = match value {
-                                v if v.is_finite() => Some(v as u32),
-                                _ => None,
+                        <td><label>{"Max length: "}</label></td>
+                        <td><input type="number" value={max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<u32>().unwrap_or_default())
                             };
-                            Msg::UpdateArrayRecPropertyMinItems(doc_index, prop_index, recursive_prop_index, value.unwrap_or(0))
-                        })} value={min_items.map(|n| n.to_string()).unwrap_or_default().to_owned()} /></td>
+                            Msg::UpdateStringRecPropertyMaxLength(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>{"RE2 pattern: "}</label></td>
+                        <td><input type="text3" value={pattern} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyPattern(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} /></td>
+                    </tr>
+                    <tr>
+                        <td><label>{"Format: "}</label></td>
+                        <td><input type="text3" value={format} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyFormat(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} /></td>
+                    </tr>
+                    </>
+                }
+            },
+            "Integer" => {
+                let minimum = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.minimum);
+                let maximum = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.maximum);
+                html! {
+                    <>
+                    <tr>
+                        <td><label>{"Minimum: "}</label></td>
+                        <td><input type="number" value={minimum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<i32>().unwrap_or_default())
+                            };
+                            Msg::UpdateIntegerRecPropertyMinimum(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>{"Maximum: "}</label></td>
+                        <td><input type="number" value={maximum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<i32>().unwrap_or_default())
+                            };
+                            Msg::UpdateIntegerRecPropertyMaximum(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
+                    </tr>
+                    </>
+                }
+            },
+            "Array" => {
+                //let byte_array = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.byte_array);
+                let max_items = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.max_items);
+                let min_items = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.min_items);
+                let content_media_type = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.content_media_type.clone());
+                html! {
+                    <>
+                    /* <tr>
+                        <td><label>{"Byte array: "}</label></td>
+                        <td><input type="checkbox" checked={byte_array.unwrap_or(false)} onchange={ctx.link().callback(move |e: Event| Msg::UpdateArrayRecPropertyByteArray(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} /></td>
+                    </tr> */
+                    <tr>
+                        <td><label>{"Min items: "}</label></td>
+                        <td><input type="number" value={min_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<u32>().unwrap_or_default())
+                            };
+                            Msg::UpdateArrayRecPropertyMinItems(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
                     </tr>
                     <tr>
                         <td><label>{"Max items: "}</label></td>
-                        <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number();
-                            let value = match value {
-                                v if v.is_finite() => Some(v as u32),
-                                _ => None,
+                        <td><input type="number" value={max_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<u32>().unwrap_or_default())
                             };
-                            Msg::UpdateArrayRecPropertyMaxItems(doc_index, prop_index, recursive_prop_index, value.unwrap_or(0))
-                        })} value={max_items.map(|n| n.to_string()).unwrap_or_default().to_owned()} /></td>
+                            Msg::UpdateArrayRecPropertyMaxItems(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>{"Content media type: "}</label></td>
+                        <td><input type="text3" value={content_media_type} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayRecPropertyCMT(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} /></td>
                     </tr>
                     </>
                 }
             },            
             "Object" => {
-                let properties = self.document_types[doc_index].properties.get(prop_index).and_then(|p| p.properties.as_ref());
                 let min_props = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.min_properties);
                 let max_props = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.max_properties);
-            
                 html! {
                     <>
                     <tr>
                         <td><label>{"Min properties: "}</label></td>
-                        <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number();
-                            let value = match value {
-                                v if v.is_finite() => Some(v as u32),
-                                _ => None,
+                        <td><input type="number" value={min_props.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<u32>().unwrap_or_default())
                             };
-                            Msg::UpdateObjectRecPropertyMinProperties(doc_index, prop_index, recursive_prop_index, value.unwrap_or(0))
-                        })} value={min_props.map(|n| n.to_string()).unwrap_or_default().to_owned()} /></td>
+                            Msg::UpdateObjectRecPropertyMinProperties(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
                     </tr>
                     <tr>
                         <td><label>{"Max properties: "}</label></td>
-                        <td><input type="number" oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value_as_number();
-                            let value = match value {
-                                v if v.is_finite() => Some(v as u32),
-                                _ => None,
+                        <td><input type="number" value={max_props.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                            let num_value = if value.is_empty() {
+                                None
+                            } else {
+                                Some(value.parse::<u32>().unwrap_or_default())
                             };
-                            Msg::UpdateObjectRecPropertyMaxProperties(doc_index, prop_index, recursive_prop_index, value.unwrap_or(0))
-                        })} value={max_props.map(|n| n.to_string()).unwrap_or_default().to_owned()} /></td>
+                            Msg::UpdateObjectRecPropertyMaxProperties(doc_index, prop_index, recursive_prop_index, num_value)
+                        })} />
+                        </td>
                     </tr>
                     </>
                 }
@@ -791,13 +934,10 @@ impl Model {
     }
 
     fn generate_json_object(&mut self) -> Vec<String> {
-        println!("generate_json_object: start");
         let mut json_arr = Vec::new();
         for doc_type in &mut self.document_types {
-            println!("generate_json_object: iterating document types");
             let mut props_map = Map::new();
             for prop in &mut doc_type.properties {
-                println!("generate_json_object: iterating properties");
                 let mut prop_obj = Map::new();
                 prop_obj.insert("type".to_owned(), json!(match prop.data_type {
                     DataType::String => "string",
@@ -810,10 +950,10 @@ impl Model {
                 if prop.description.as_ref().map(|c| c.len()).unwrap_or(0) > 0 {
                     prop_obj.insert("description".to_owned(), json!(prop.description));
                 }
-                if prop.min_length.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.min_length.is_some() {
                     prop_obj.insert("minLength".to_owned(), json!(prop.min_length));
                 }
-                if prop.max_length.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.max_length.is_some() {
                     prop_obj.insert("maxLength".to_owned(), json!(prop.max_length));
                 }
                 if prop.pattern.as_ref().map(|c| c.len()).unwrap_or(0) > 0 {
@@ -822,29 +962,32 @@ impl Model {
                 if prop.format.as_ref().map(|c| c.len()).unwrap_or(0) > 0 {
                     prop_obj.insert("format".to_owned(), json!(prop.format));
                 }
-                if prop.minimum.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.minimum.is_some() {
                     prop_obj.insert("minimum".to_owned(), json!(prop.minimum));
                 }
-                if prop.maximum.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.maximum.is_some() {
                     prop_obj.insert("maximum".to_owned(), json!(prop.maximum));
                 }
                 if let Some(byte_array) = prop.byte_array {
                     prop_obj.insert("byteArray".to_owned(), json!(byte_array));
                 }
-                if prop.min_items.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.min_items.is_some() {
                     prop_obj.insert("minItems".to_owned(), json!(prop.min_items));
                 }
-                if prop.max_items.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.max_items.is_some() {
                     prop_obj.insert("maxItems".to_owned(), json!(prop.max_items));
+                }
+                if prop.content_media_type.is_some() {
+                    prop_obj.insert("contentMediaType".to_owned(), json!(prop.content_media_type));
                 }
                 if prop.data_type == DataType::Object {
                     let rec_props_map = Self::generate_nested_properties(prop);
                     prop_obj.insert("properties".to_owned(), json!(rec_props_map));
                     }
-                if prop.min_properties.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.min_properties.is_some() {
                     prop_obj.insert("minProperties".to_owned(), json!(prop.min_properties));
                 }
-                if prop.max_properties.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if prop.max_properties.is_some() {
                     prop_obj.insert("maxProperties".to_owned(), json!(prop.max_properties));
                 }
                 if prop.rec_required.as_ref().map(|c| c.len()).unwrap_or_default() > 0 {
@@ -898,6 +1041,18 @@ impl Model {
             if !doc_type.indices.is_empty() {
                 doc_obj.insert("indices".to_owned(), json!(indices_arr));
             }
+            if doc_type.created_at_required && !doc_type.required.contains(&String::from("$createdAt")) {
+                doc_type.required.push("$createdAt".to_string());
+            }
+            if doc_type.required.contains(&String::from("$createdAt")) && !doc_type.created_at_required {
+                doc_type.required.retain(|x| x != &String::from("$createdAt"))
+            }
+            if doc_type.updated_at_required && !doc_type.required.contains(&String::from("$updatedAt")) {
+                doc_type.required.push("$updatedAt".to_string());
+            }
+            if doc_type.required.contains(&String::from("$updatedAt")) && !doc_type.updated_at_required {
+                doc_type.required.retain(|x| x != &String::from("$updatedAt"))
+            }
             if !doc_type.required.is_empty() {
                 doc_obj.insert("required".to_owned(), json!(doc_type.required));
             }
@@ -911,6 +1066,8 @@ impl Model {
             let formatted_doc_obj = &final_doc_obj.to_string()[1..final_doc_obj.to_string().len()-1];
             json_arr.push(formatted_doc_obj.to_string());
         }
+        let s = json_arr.join(",");
+        self.schema = format!("{{{}}}", s);
         json_arr
     }    
 
@@ -930,10 +1087,10 @@ impl Model {
                 if rec_prop.description.as_ref().map(|c| c.len()).unwrap_or(0) > 0 {
                     rec_prop_obj.insert("description".to_owned(), json!(rec_prop.description));
                 }
-                if rec_prop.min_length.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.min_length.is_some() {
                     rec_prop_obj.insert("minLength".to_owned(), json!(rec_prop.min_length));
                 }
-                if rec_prop.max_length.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.max_length.is_some() {
                     rec_prop_obj.insert("maxLength".to_owned(), json!(rec_prop.max_length));
                 }
                 if rec_prop.pattern.as_ref().map(|c| c.len()).unwrap_or(0) > 0 {
@@ -942,28 +1099,31 @@ impl Model {
                 if rec_prop.format.as_ref().map(|c| c.len()).unwrap_or(0) > 0 {
                     rec_prop_obj.insert("format".to_owned(), json!(rec_prop.format));
                 }
-                if rec_prop.minimum.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.minimum.is_some() {
                     rec_prop_obj.insert("minimum".to_owned(), json!(rec_prop.minimum));
                 }
-                if rec_prop.maximum.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.maximum.is_some() {
                     rec_prop_obj.insert("maximum".to_owned(), json!(rec_prop.maximum));
                 }
                 if let Some(byte_array) = rec_prop.byte_array {
                     rec_prop_obj.insert("byteArray".to_owned(), json!(byte_array));
                 }
-                if rec_prop.min_items.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.min_items.is_some() {
                     rec_prop_obj.insert("minItems".to_owned(), json!(rec_prop.min_items));
                 }
-                if rec_prop.max_items.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.max_items.is_some() {
                     rec_prop_obj.insert("maxItems".to_owned(), json!(rec_prop.max_items));
                 }
-                if rec_prop.data_type == DataType::Object {
-                    rec_prop_obj.insert("properties".to_owned(), json!({}));
+                if rec_prop.content_media_type.as_ref().map(|c| c.len()).unwrap_or(0) > 0 {
+                    rec_prop_obj.insert("contentMediaType".to_owned(), json!(rec_prop.content_media_type));
                 }
-                if rec_prop.min_properties.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.data_type == DataType::Object {
+                    rec_prop_obj.insert("properties".to_owned(), json!({"some_property":{"type": "string"}}));
+                }
+                if rec_prop.min_properties.is_some() {
                     rec_prop_obj.insert("minProperties".to_owned(), json!(rec_prop.min_properties));
                 }
-                if rec_prop.max_properties.as_ref().map(|c| *c).unwrap_or(0) > 0 {
+                if rec_prop.max_properties.is_some() {
                     rec_prop_obj.insert("maxProperties".to_owned(), json!(rec_prop.max_properties));
                 }
                 if rec_prop.data_type == DataType::Object {
@@ -1009,6 +1169,13 @@ impl Model {
 
             // Check if value is an object
             if let Some(doc_type_obj) = doc_type_value.as_object() {
+                // Check if $createdAt or $updatedAt are required
+                if let Some(required) = doc_type_obj.get("required") {
+                    if let Some(required_array) = required.as_array() {
+                        document_type.created_at_required = required_array.contains(&Value::String("$createdAt".to_string()));
+                        document_type.updated_at_required = required_array.contains(&Value::String("$updatedAt".to_string()));
+                    }
+                }
                 // Iterate over properties
                 if let Some(properties) = doc_type_obj.get("properties") {
                     if let Some(properties_obj) = properties.as_object() {
@@ -1072,6 +1239,9 @@ impl Model {
                                 if let Some(max_items) = prop_obj.get("maxItems") {
                                     property.max_items = max_items.as_u64().map(|num| num as u32);
                                 }
+                                if let Some(content_media_type) = prop_obj.get("contentMediaType") {
+                                    property.content_media_type = content_media_type.as_str().map(|s| s.to_string());
+                                }
                                 if let Some(min_properties) = prop_obj.get("minProperties") {
                                     property.min_properties = min_properties.as_u64().map(|num| num as u32);
                                 }
@@ -1112,8 +1282,10 @@ impl Model {
                                                 if let Some(comment) = nested_prop_obj.get("$comment") {
                                                     nested_property.comment = comment.as_str().map(|s| s.to_string());
                                                 }
-                                                if let Some(min_length) = nested_prop_obj.get("minLength") {
-                                                    nested_property.min_length = min_length.as_u64().map(|num| num as u32);
+                                                if nested_prop_obj.contains_key("minLength") {
+                                                    nested_property.min_length = nested_prop_obj.get("minLength").and_then(|v| v.as_u64()).map(|num| num as u32);
+                                                } else {
+                                                    nested_property.min_length = None;
                                                 }
                                                 if let Some(max_length) = nested_prop_obj.get("maxLength") {
                                                     nested_property.max_length = max_length.as_u64().map(|num| num as u32);
@@ -1135,6 +1307,9 @@ impl Model {
                                                 }
                                                 if let Some(max_items) = nested_prop_obj.get("maxItems") {
                                                     nested_property.max_items = max_items.as_u64().map(|num| num as u32);
+                                                }
+                                                if let Some(content_media_type) = nested_prop_obj.get("contentMediaType") {
+                                                    nested_property.content_media_type = content_media_type.as_str().map(|s| s.to_string());
                                                 }
                                                 if let Some(min_properties) = nested_prop_obj.get("minProperties") {
                                                     nested_property.min_properties = min_properties.as_u64().map(|num| num as u32);
@@ -1218,19 +1393,27 @@ impl Model {
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
         let json_obj: serde_json::Value = serde_json::from_str(&new_s).unwrap();
-
+    
         let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
         let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
         let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
         let owner_id = Identifier::random();
-        let contract = factory
-            .create(owner_id, json_obj.clone().into(), None, None)
-            .expect("data in fixture should be correct");
-        let results = contract.data_contract.validate(&contract.data_contract.to_cleaned_object().unwrap()).unwrap_or_default();
-        let errors = results.errors;
-        self.extract_basic_error_messages(&errors)
+        let contract_result = factory
+            .create(owner_id, json_obj.clone().into(), None, None);
+    
+        match contract_result {
+            Ok(contract) => {
+                let results = contract.data_contract.validate(&contract.data_contract.to_cleaned_object().unwrap()).unwrap_or_default();
+                let errors = results.errors;
+                self.extract_basic_error_messages(&errors)
+            },
+            Err(e) => {
+                self.error_messages_ai.push(format!("{}", e));
+                self.error_messages_ai.clone()
+            }
+        }
     }
-
+    
     fn extract_basic_error_messages(&self, errors: &[ConsensusError]) -> Vec<String> {
         let messages: Vec<String> = errors
             .iter()
@@ -1322,7 +1505,7 @@ impl Component for Model {
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             // General
             Msg::AddDocumentType => {
@@ -1401,6 +1584,13 @@ impl Component for Model {
             Msg::UpdatePropertyRequired(doc_index, prop_index, required) => {
                 self.document_types[doc_index].properties[prop_index].required = required;
             }
+            Msg::UpdateSystemPropertiesRequired(doc_index, system_prop, required) => {
+                match system_prop {
+                    0 => self.document_types[doc_index].created_at_required = required,
+                    1 => self.document_types[doc_index].updated_at_required = required,
+                    _ => {}
+                }
+            }
             Msg::UpdatePropertyDescription(doc_index, prop_index, description) => {
                 self.document_types[doc_index].properties[prop_index].description = Some(description);
             }
@@ -1410,10 +1600,10 @@ impl Component for Model {
 
             // Optional property parameters
             Msg::UpdateStringPropertyMinLength(doc_index, prop_index, min_length) => {
-                self.document_types[doc_index].properties[prop_index].min_length = Some(min_length);
+                self.document_types[doc_index].properties[prop_index].min_length = min_length;
             }
             Msg::UpdateStringPropertyMaxLength(doc_index, prop_index, max_length) => {
-                self.document_types[doc_index].properties[prop_index].max_length = Some(max_length);
+                self.document_types[doc_index].properties[prop_index].max_length = max_length;
             }
             Msg::UpdateStringPropertyPattern(doc_index, prop_index, pattern) => {
                 self.document_types[doc_index].properties[prop_index].pattern = Some(pattern);
@@ -1422,25 +1612,28 @@ impl Component for Model {
                 self.document_types[doc_index].properties[prop_index].format = Some(format);
             }
             Msg::UpdateIntegerPropertyMinimum(doc_index, prop_index, minimum) => {
-                self.document_types[doc_index].properties[prop_index].minimum = Some(minimum);
+                self.document_types[doc_index].properties[prop_index].minimum = minimum;
             }
             Msg::UpdateIntegerPropertyMaximum(doc_index, prop_index, maximum) => {
-                self.document_types[doc_index].properties[prop_index].maximum = Some(maximum);
+                self.document_types[doc_index].properties[prop_index].maximum = maximum;
             }
-            Msg::UpdateArrayPropertyByteArray(doc_index, prop_index, byte_array) => {
+            /* Msg::UpdateArrayPropertyByteArray(doc_index, prop_index, byte_array) => {
                 self.document_types[doc_index].properties[prop_index].byte_array = Some(byte_array);
-            }
+            } */
             Msg::UpdateArrayPropertyMinItems(doc_index, prop_index, min_items) => {
-                self.document_types[doc_index].properties[prop_index].min_items = Some(min_items);
+                self.document_types[doc_index].properties[prop_index].min_items = min_items;
             }
             Msg::UpdateArrayPropertyMaxItems(doc_index, prop_index, max_items) => {
-                self.document_types[doc_index].properties[prop_index].max_items = Some(max_items);
+                self.document_types[doc_index].properties[prop_index].max_items = max_items;
+            }
+            Msg::UpdateArrayPropertyCMT(doc_index, prop_index, cmt) => {
+                self.document_types[doc_index].properties[prop_index].content_media_type = Some(cmt);
             }
             Msg::UpdateObjectPropertyMinProperties(doc_index, prop_index, min_properties) => {
-                self.document_types[doc_index].properties[prop_index].min_properties = Some(min_properties);
+                self.document_types[doc_index].properties[prop_index].min_properties = min_properties;
             }
             Msg::UpdateObjectPropertyMaxProperties(doc_index, prop_index, max_properties) => {
-                self.document_types[doc_index].properties[prop_index].max_properties = Some(max_properties);
+                self.document_types[doc_index].properties[prop_index].max_properties = max_properties;
             }
 
             // Recursive properties
@@ -1463,6 +1656,7 @@ impl Component for Model {
                     maximum: None,
                     min_items: None,
                     max_items: None,
+                    content_media_type: None,
                     min_properties: None,
                     max_properties: None,
                 };
@@ -1517,12 +1711,12 @@ impl Component for Model {
             }
             Msg::UpdateStringRecPropertyMinLength(doc_index, prop_index, rec_prop_index, min_length) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].min_length = Some(min_length);
+                    property_vec[rec_prop_index].min_length = min_length;
                 }
             }
             Msg::UpdateStringRecPropertyMaxLength(doc_index, prop_index, rec_prop_index, max_length) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].max_length = Some(max_length);
+                    property_vec[rec_prop_index].max_length = max_length;
                 }
             }
             Msg::UpdateStringRecPropertyPattern(doc_index, prop_index, rec_prop_index, pattern) => {
@@ -1537,46 +1731,55 @@ impl Component for Model {
             }
             Msg::UpdateIntegerRecPropertyMaximum(doc_index, prop_index, rec_prop_index, maximum) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].maximum = Some(maximum);
+                    property_vec[rec_prop_index].maximum = maximum;
                 }
             }
             Msg::UpdateIntegerRecPropertyMinimum(doc_index, prop_index, rec_prop_index, minimum) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].minimum = Some(minimum);
+                    property_vec[rec_prop_index].minimum = minimum;
                 }
             }
-            Msg::UpdateArrayRecPropertyByteArray(doc_index, prop_index, rec_prop_index, byte_array) => {
+            /* Msg::UpdateArrayRecPropertyByteArray(doc_index, prop_index, rec_prop_index, byte_array) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
                     property_vec[rec_prop_index].byte_array = Some(byte_array);
                 }
-            }
+            } */
             Msg::UpdateArrayRecPropertyMinItems(doc_index, prop_index, rec_prop_index, min_items) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].min_items = Some(min_items);
+                    property_vec[rec_prop_index].min_items = min_items;
                 }
             }
             Msg::UpdateArrayRecPropertyMaxItems(doc_index, prop_index, rec_prop_index, max_items) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].max_items = Some(max_items);
+                    property_vec[rec_prop_index].max_items = max_items;
+                }
+            }
+            Msg::UpdateArrayRecPropertyCMT(doc_index, prop_index, rec_prop_index, cmt) => {
+                if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
+                    property_vec[rec_prop_index].content_media_type = Some(cmt);
                 }
             }
             Msg::UpdateObjectRecPropertyMinProperties(doc_index, prop_index, rec_prop_index, min_props) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].min_properties = Some(min_props);
+                    property_vec[rec_prop_index].min_properties = min_props;
                 }
             }
             Msg::UpdateObjectRecPropertyMaxProperties(doc_index, prop_index, rec_prop_index, max_props) => {
                 if let Some(property_vec) = self.document_types[doc_index].properties[prop_index].properties.as_mut() {
-                    property_vec[rec_prop_index].max_properties = Some(max_props);
+                    property_vec[rec_prop_index].max_properties = max_props;
                 }
             }
 
             // Import
             Msg::UpdateImportedJson(import) => {
-                self.imported_json = import;
+                self.imported_json = import.clone();
+                self.schema = import;
             }
             Msg::Import => {
                 self.parse_imported_json();
+                self.json_object = Some(self.generate_json_object()).unwrap();
+                self.error_messages = Some(self.validate()).unwrap();
+                self.imported_json = String::new();
             }
             Msg::Clear => {
                 self.json_object = vec![];
@@ -1588,6 +1791,8 @@ impl Component for Model {
                 self.prompt = val;
             },
             Msg::GenerateSchema => {
+
+                // Prepend the appropriate default prompt
                 let prompt = if self.schema.is_empty() {
                     let first_prompt_pre = FIRST_PROMPT_PRE.to_string();
                     format!("{}{}", first_prompt_pre, self.prompt)
@@ -1601,14 +1806,14 @@ impl Component for Model {
         
                 self.loading = true;
 
-                let callback = _ctx.link().callback(Msg::ReceiveSchema);
+                let callback = ctx.link().callback(Msg::ReceiveSchema);
                 spawn_local(async move {
                     let result = call_openai(&prompt).await;
                     callback.emit(result);
                 });
     
                 // Clear the input field
-                _ctx.link().send_message(Msg::ClearInput);
+                ctx.link().send_message(Msg::ClearInput);
             },
             Msg::ClearInput => {
                 self.prompt.clear();
@@ -1657,7 +1862,7 @@ impl Component for Model {
                                 
         let textarea = if self.json_object.len() != 0 {
             html! {
-                <textarea class="textarea" id="json_output" value={if self.json_object.len() != 0 as usize {
+                <textarea class="textarea-no-whitespace" id="json_output" value={if self.json_object.len() != 0 as usize {
                     serde_json::to_string(&json_obj).unwrap()
                 } else { 
                     "".to_string()
@@ -1671,101 +1876,106 @@ impl Component for Model {
         // html
         html! {
             <main class="home">
-            <div class="container_ai">
-                <div class="top-section_ai">
-                    <img class="logo_ai" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
-                    <h1 class="header_ai">{"Data Contract Creator"}</h1>
-                </div>
-                <div class="content-container_ai">
-                    <div class="input-container_ai">
-                        <form onsubmit={onsubmit} class="form-container_ai">
-                            <div class="input-button-container_ai">
-                                <input
-                                    placeholder={
-                                        if self.schema.is_empty() {
-                                            "Briefly describe a data contract."
-                                        } else {
-                                            "Describe any adjustments. Refresh the page to start new."
-                                        }
-                                    }
-                                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
-                                />
-                                <button type="submit">{"Generate"}</button>
-                            </div>
-                        </form>
-                        {
-                            if self.loading {
-                                html! {
-                                    <div class="loader_ai">
-                                        <div class="dot_ai"></div>
-                                        <div class="dot_ai"></div>
-                                        <div class="dot_ai"></div>
+                <body>
+                    <div class="container_ai">
+                        <div class="top-section_ai">
+                            <img class="logo_ai" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
+                            <h1 class="header_ai">{"Data Contract Creator"}</h1>
+                        </div>
+                        <div class="content-container_ai">
+                            <div class="input-container_ai">
+                                <form onsubmit={onsubmit} class="form-container_ai">
+                                    <div class="input-button-container_ai">
+                                        <input
+                                            placeholder={
+                                                if self.schema.is_empty() {
+                                                    "Describe your app here"
+                                                } else {
+                                                    "Describe any adjustments here"
+                                                }
+                                            }
+                                            value={self.prompt.clone()}
+                                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                                        />
+                                        <button type="submit">{"Generate"}</button>
                                     </div>
-                                }
-                            } else {
-                                html! {}
-                            }
-                        }    
+                                </form>
+                                {
+                                    if self.loading {
+                                        html! {
+                                            <div class="loader_ai">
+                                                <div class="dot_ai"></div>
+                                                <div class="dot_ai"></div>
+                                                <div class="dot_ai"></div>
+                                            </div>
+                                        }
+                                    } else {
+                                        html! {}
+                                    }
+                                }    
+                            </div>
+                            <br/><br/>
+                        </div>
                     </div>
-                    <h3>{if !self.history.is_empty() {"Prompt history:"} else {""}}</h3>
-                    {for self.history.iter().map(|input| html! {
-                        <div>{input}</div>
-                    })}
-                </div>
-            </div>
-            <body>
-            <div class="column-left">
+                    <div class="column-left">
 
-                // show input fields
-                <p class="input-fields">{self.view_document_types(ctx)}</p>
+                        // show input fields
+                        <p class="input-fields">{self.view_document_types(ctx)}</p>
 
-                <div class="button-container">
-                    // add input fields for another document type and add one to Self::document_types
-                    <button class="button2" onclick={ctx.link().callback(|_| Msg::AddDocumentType)}>{"Add document type"}</button><br/>
+                        <div class="button-container">
+                            // add input fields for another document type and add one to Self::document_types
+                            <button class="button2" onclick={ctx.link().callback(|_| Msg::AddDocumentType)}>{"Add document type"}</button><br/>
 
-                    // look at document_types and generate json object from it
-                    <button class="button button-primary" onclick={ctx.link().callback(|_| Msg::Submit)}>{"Submit"}</button>
-                </div>
-                <div class="footnotes">
-                </div>
-            </div>
-            <div class="column-right">
-            
-                // format and display json object
-                <p class="output-container">
-                    <h2>{"Contract"}</h2>
-                    <h3>{if self.imported_json.len() == 0 && self.error_messages.len() != 0 {"Validation errors:"} else {""}}</h3>
-                    <div>{
-                        if self.imported_json.len() == 0 && self.error_messages.len() != 0 {
-                            html! {
-                                <ul class="error-text">
-                                    { for self.error_messages.iter().map(|i| html! { <li>{i.clone()}</li> }) }
-                                </ul>
+                            // look at document_types and generate json object from it
+                            <button class="button button-primary" onclick={ctx.link().callback(|_| Msg::Submit)}>{"Submit"}</button>
+                        </div>
+                        <div class="footnotes">
+                        </div>
+                    </div>
+                    <div class="column-right">
+                    
+                        // format and display json object
+                        <p class="output-container">
+                            <h2>{"Contract"}</h2>
+                            <h3>{if self.imported_json.len() == 0 && self.error_messages.len() != 0 {"Validation errors:"} else {""}}</h3>
+                            <div>{
+                                if self.imported_json.len() == 0 && self.error_messages.len() != 0 {
+                                    html! {
+                                        <ul class="error-text">
+                                            { for self.error_messages.iter().map(|i| html! { <li>{i.clone()}</li> }) }
+                                        </ul>
+                                    }
+                                } else if self.imported_json.len() == 0 && self.error_messages.len() == 0 &&self.json_object.len() > 0 { 
+                                    html! {<p class="passed-text">{"DPP validation passing ✓"}</p>}
+                                } else {
+                                    html! {""}
+                                }
+                            }</div>                    
+                            <h3>{if self.json_object.len() != 0 {"With whitespace:"} else {""}}</h3>
+                            <pre>
+                                <textarea class="textarea-whitespace" id="json_output" placeholder="Paste here to import" value={if self.json_object.len() == 0 {self.imported_json.clone()} else {json_pretty}} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateImportedJson(e.target_dyn_into::<web_sys::HtmlTextAreaElement>().unwrap().value()))}></textarea>
+                            </pre>
+                            <h3>{if self.json_object.len() != 0 {"Without whitespace:"} else {""}}</h3>
+                            <pre>{textarea}</pre>
+                            <p><b>
+                            {
+                                if serde_json::to_string(&json_obj).unwrap().len() > 2 {
+                                format!("Size: {} bytes", serde_json::to_string(&json_obj).unwrap().len())
+                                } else {String::from("Size: 0 bytes")}
                             }
-                        } else if self.imported_json.len() == 0 && self.error_messages.len() == 0 &&self.json_object.len() > 0 { 
-                            html! {<p class="passed-text">{"DPP validation passing ✓"}</p>}
-                        } else {
-                            html! {""}
-                        }
-                    }</div>                    
-                    <h3>{if self.json_object.len() != 0 {"With whitespace:"} else {""}}</h3>
-                    <pre>
-                    <textarea class="textarea" id="json_output" placeholder="Paste here to import" value={if self.json_object.len() == 0 {self.imported_json.clone()} else {json_pretty}} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateImportedJson(e.target_dyn_into::<web_sys::HtmlTextAreaElement>().unwrap().value()))}></textarea>
-                    </pre>
-                    <h3>{if self.json_object.len() != 0 {"Without whitespace:"} else {""}}</h3>
-                    <pre>{textarea}</pre>
-                    <p><b>
-                    {
-                        if serde_json::to_string(&json_obj).unwrap().len() > 2 {
-                        format!("Size: {} bytes", serde_json::to_string(&json_obj).unwrap().len())
-                        } else {String::from("Size: 0 bytes")}
-                    }
-                    </b></p>
-                    <div><button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}>{"Import"}</button></div>
-                    <div><button class="button-clear" onclick={ctx.link().callback(|_| Msg::Clear)}>{"Clear"}</button></div>
-                </p>
-            </div>
-            </body>
+                            </b></p>
+                            <div><button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}>{"Import"}</button></div>
+                            <div><button class="button-clear" onclick={ctx.link().callback(|_| Msg::Clear)}>{"Clear"}</button></div>
+                        </p>
+                        <br/>
+                        <div class="prompt-history">
+                            <h3>{if !self.history.is_empty() {"Prompt history:"} else {""}}</h3>
+                            {for self.history.iter().map(|input| html! {
+                                <div>{input}</div>
+                            })}
+                        </div>
+                    </div>
+                </body>
             </main>
         }
     }
