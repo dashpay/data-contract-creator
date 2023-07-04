@@ -15,6 +15,8 @@ struct DocumentType {
     properties: Vec<Property>,
     indices: Vec<Index>,
     required: Vec<String>,
+    created_at_required: bool,
+    updated_at_required: bool,
     additionalProperties: bool,
     comment: String
 }
@@ -26,6 +28,8 @@ impl Default for DocumentType {
             properties: vec![],
             indices: vec![],
             required: vec![],
+            created_at_required: false,
+            updated_at_required: false,
             additionalProperties: false,
             comment: String::new()
         }
@@ -121,6 +125,7 @@ enum Msg {
     UpdateIndexUnique(usize, usize, bool),
     UpdateIndexSorting(usize, usize, usize, String),
     UpdatePropertyRequired(usize, usize, bool),
+    UpdateSystemPropertiesRequired(usize, usize, bool),
     UpdatePropertyDescription(usize, usize, String),
     UpdatePropertyComment(usize, usize, String),
     UpdateIndexProperty(usize, usize, usize, String),
@@ -234,6 +239,19 @@ impl Model {
                             {for (0..self.document_types[index].properties.len()).map(|i| self.view_property(index, i, ctx))}
                             <tr>
                                 <td><button class="button" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}>{"Add property"}</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <br/>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td><label>{"Require $createdAt:   "}</label></td>
+                                <td><input type="checkbox" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} /></td>
+                            </tr>
+                            <tr>
+                                <td><label>{"Require $updatedAt:   "}</label></td>
+                                <td><input type="checkbox" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} /></td>
                             </tr>
                         </tbody>
                     </table>
@@ -775,6 +793,18 @@ impl Model {
             if !doc_type.indices.is_empty() {
                 doc_obj.insert("indices".to_owned(), json!(indices_arr));
             }
+            if doc_type.created_at_required && !doc_type.required.contains(&String::from("$createdAt")) {
+                doc_type.required.push("$createdAt".to_string());
+            }
+            if doc_type.required.contains(&String::from("$createdAt")) && !doc_type.created_at_required {
+                doc_type.required.retain(|x| x != &String::from("$createdAt"))
+            }
+            if doc_type.updated_at_required && !doc_type.required.contains(&String::from("$updatedAt")) {
+                doc_type.required.push("$updatedAt".to_string());
+            }
+            if doc_type.required.contains(&String::from("$updatedAt")) && !doc_type.updated_at_required {
+                doc_type.required.retain(|x| x != &String::from("$updatedAt"))
+            }
             if !doc_type.required.is_empty() {
                 doc_obj.insert("required".to_owned(), json!(doc_type.required));
             }
@@ -886,6 +916,13 @@ impl Model {
 
             // Check if value is an object
             if let Some(doc_type_obj) = doc_type_value.as_object() {
+                // Check if $createdAt or $updatedAt are required
+                if let Some(required) = doc_type_obj.get("required") {
+                    if let Some(required_array) = required.as_array() {
+                        document_type.created_at_required = required_array.contains(&Value::String("$createdAt".to_string()));
+                        document_type.updated_at_required = required_array.contains(&Value::String("$updatedAt".to_string()));
+                    }
+                }
                 // Iterate over properties
                 if let Some(properties) = doc_type_obj.get("properties") {
                     if let Some(properties_obj) = properties.as_object() {
@@ -1224,6 +1261,13 @@ impl Component for Model {
             }
             Msg::UpdatePropertyRequired(doc_index, prop_index, required) => {
                 self.document_types[doc_index].properties[prop_index].required = required;
+            }
+            Msg::UpdateSystemPropertiesRequired(doc_index, system_prop, required) => {
+                match system_prop {
+                    0 => self.document_types[doc_index].created_at_required = required,
+                    1 => self.document_types[doc_index].updated_at_required = required,
+                    _ => {}
+                }
             }
             Msg::UpdatePropertyDescription(doc_index, prop_index, description) => {
                 self.document_types[doc_index].properties[prop_index].description = Some(description);
