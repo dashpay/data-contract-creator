@@ -8,13 +8,27 @@ $light-blue: #008de4;
 
 @import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
 
-html,
+
+/* Layout*/
+main {
+  font-family: 'Nunito', sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: top;
+  height: 100%;
+  width: 100%;
+}
+
 body {
   height: 100%;
   margin: 0;
   padding: 20px;
   padding-top: 5px;
   min-height: 100vh;
+}
+
+pre {
+  white-space: pre-wrap;
 }
 
 /* General components */
@@ -30,6 +44,13 @@ input[type="text"] {
   &.error {
     border-color: red;
   }
+}
+
+input[type="password"] {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 300px;
 }
 
 input[type="text2"] {
@@ -161,32 +182,6 @@ select {
   }
 }
 
-/* Layout */
-main {
-  font-family: 'Nunito', sans-serif;
-}
-
-.home {
-  display: flex;
-  flex-direction: column;
-  justify-content: top;
-  height: 100%;
-  width: 100%;
-}
-
-.table {
-  align-items: left;
-  width: 100%
-}
-
-.error-text {
-  color: red;
-}
-
-.passed-text {
-  color: $primary-color;
-}
-
 .input-container {
   border: 1px solid black;
   background-color: whitesmoke;
@@ -203,12 +198,13 @@ main {
   overflow-wrap: break-word;
 }
 
-.indent {
-  padding-left: 20px;
+.table {
+  align-items: left;
+  width: 100%
 }
 
-pre {
-  white-space: pre-wrap;
+.indent {
+  padding-left: 20px;
 }
 
 .column-left {
@@ -251,9 +247,14 @@ pre {
   padding-bottom: 50px;
 }
 
-.textarea {
+.textarea-whitespace {
   width: 99%;
-  height: 200px;
+  height: 300px;
+}
+
+.textarea-no-whitespace {
+  width: 99%;
+  height: 100px;
 }
 
 .text-area-subtext {
@@ -277,13 +278,166 @@ pre {
   padding-right: 10px;
 }
 
-.instructions {
-  margin-bottom: 0px;
-  margin-left: 30px;
-  margin-right: 30px;
+.error-text {
+  color: red;
 }
 
-.instructions-text {
-  margin-left:30px;
-  margin-right: 30px;
+.passed-text {
+  color: $primary-color;
+}
+
+.prompt-history {
+  text-align: center;
+}
+
+// AI
+// Variables
+$body-color: #008de4;
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
+
+.container_ai {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding-top: 50px;
+  width: 100%;
+  //max-width: 1200px;
+
+  .top-section_ai {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .logo_ai {
+    width: 200px;
+    height: 100px;
+  }
+
+  .header_ai {
+    text-align: center;
+    margin-top: 0px;
+  }
+
+  .content-container_ai {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+    width: 66.67%;
+    max-width: 800px;
+  }
+
+  .input-container_ai {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .form-container_ai {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .input-button-container_ai {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+  }
+
+  @keyframes bounce {
+    0%, 80%, 100% {
+      transform: translateY(0);
+    } 
+  
+    40% {
+      transform: translateY(-20px);
+    }
+  }
+  
+  .loader_ai {
+    display: flex;
+    margin-top: 70px;
+    justify-content: center;
+    align-items: center;
+    height: 60px;
+  }
+  
+  .loader_ai .dot_ai {
+    background-color: $body-color;
+    width: 15px;
+    height: 15px;
+    margin: 0 5px;
+    border-radius: 50%;
+  
+    animation: bounce 1s ease-in-out infinite;
+  }
+  
+  .loader_ai .dot_ai:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  
+  .loader_ai .dot_ai:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+    
+  .validation-container_ai {
+    margin-top: 20px;
+  }
+
+  .result-container_ai {
+    width: 100%;
+  }
+
+  .passed-text_ai {
+    color:#008de4;
+  }
+
+  .error-text_ai {
+    color: red;
+    text-align: center;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid gray;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+  }
+
+  input:focus {
+    border: 1px solid #008de4;
+    outline: none;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: $body-color;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  pre {
+    margin-top: 20px;
+    padding: 10px;
+    font-size: 14px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
 }
