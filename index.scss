@@ -47,6 +47,9 @@ input[type="text"] {
 }
 
 input[type="password"] {
+  position: absolute;
+  top: 20px;
+  left: 20px;
   width: 300px;
 }
 
