@@ -6,18 +6,20 @@
 
 This is a web app, hosted at [dashpay.io](https://dashpay.io/), to help people intuitively create and edit Dash Platform data contracts. There are three options available for getting started. Users can:
 
-1. Use ChatGPT to automatically generate a data contract based on the provided context.
+1. Use the ChatGPT widget to automatically generate a data contract based on the provided context.
 2. Manually fill out a dynamic form.
 3. Import an existing data contract and edit it.
 
-The app also validates the data contracts against Dash Platform Protocol, so users can save money by validating before actually submitting data contracts to Dash Platform.
+The app also validates the data contracts against Dash Platform Protocol, so users can save time and money by validating before actually submitting data contracts to Dash Platform.
+
+In the future, users will be able to register data contracts to Dash Platform directly from the web app. However, for now, they must use the [JavaScript SDK](https://dashplatform.readme.io/docs/tutorial-register-a-data-contract), where they can copy and paste the contracts generated from here.
 
 This app is built in Rust using the Yew framework and WebAssembly.
 
 ## Features
 
 - Use ChatGPT to generate and modify Platform-compliant (usually) data contracts
-- Dynamically generate and modify data contracts using a web interface
+- Dynamically create and modify data contracts using a web interface
 - Import existing data contract schemas for editing
 - Validate data contract schemas against Dash Platform Protocol rules
 
