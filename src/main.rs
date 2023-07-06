@@ -1943,7 +1943,7 @@ impl Component for Model {
                                     }
                                 }    
                             </div>
-                            <div class="error-text">
+                            <div class="error-text_ai">
                                 {self.error_messages_ai.clone()}
                             </div>
                             <br/><br/>
