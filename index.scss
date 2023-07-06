@@ -46,6 +46,10 @@ input[type="text"] {
   }
 }
 
+input[type="password"] {
+  width: 300px;
+}
+
 input[type="text2"] {
   border: 2px solid $light-gray;
   border-radius: 4px;

@@ -9,7 +9,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement, console};
 
-const OPENAI_API_KEY: &str = "your key here" ;
+//const OPENAI_API_KEY: &str = "your key here" ;
 
 // Prepended to the prompt if App.schema is empty
 const FIRST_PROMPT_PRE: &str = r#"
@@ -47,7 +47,7 @@ Do not explain anything or return anything else other than a properly formatted 
 "#;
 
 /// Calls OpenAI
-pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
+pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyhow::Error> {
     let params = serde_json::json!({
         "model": "text-davinci-003",
         "prompt": prompt,
@@ -59,7 +59,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     let mut opts = RequestInit::new();
     let headers = web_sys::Headers::new().unwrap();
 
-    headers.append("Authorization", &format!("Bearer {}", OPENAI_API_KEY)).unwrap();
+    headers.append("Authorization", &format!("Bearer {}", user_key)).unwrap();
     headers.append("Content-Type", "application/json").unwrap();
 
     opts.method("POST");
@@ -81,21 +81,35 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
         Ok(resp) => resp,
         Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to convert JsValue to Response".to_string()))),
     };
-    
-    let text = JsFuture::from(response.text().unwrap()).await;
-    
-    let text = match text {
-        Ok(txt) => txt,
-        Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to get text from response".to_string()))),
+
+    let text_future = match response.text() {
+        Ok(txt_future) => txt_future,
+        Err(_) => return Err(anyhow::anyhow!("Failed to read text from the response")),
     };
 
-    console::log_1(&text);
+    let text_js = match JsFuture::from(text_future).await {
+        Ok(txt_js) => txt_js,
+        Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to convert future to JsValue".to_string()))),
+    };
 
-    let text: String = match text.as_string() {
+    let text = match text_js.as_string() {
         Some(txt) => txt,
         None => return Err(anyhow::anyhow!("Failed to convert JsValue to String")),
     };
 
+    console::log_1(&text_js); // log the JsValue
+
+    if !response.ok() {
+        let status = response.status();
+        let parsed_json: Result<serde_json::Value, _> = serde_json::from_str(&text);
+        let message = if let Ok(json) = parsed_json {
+            json.get("error").and_then(|e| e.get("message")).and_then(|m| m.as_str()).unwrap_or(&text).to_string()
+        } else {
+            text
+        };
+        return Err(anyhow::anyhow!("HTTP {} error from OpenAI: {}", status, message));
+    }
+    
     let json: serde_json::Value = serde_json::from_str(&text).unwrap();
     let schema_text = json["choices"][0]["text"].as_str().unwrap_or("");
 
@@ -127,6 +141,7 @@ struct Model {
     error_messages: Vec<String>,
 
     // OpenAI
+    user_key: String,
     prompt: String,
     schema: String,
     temp_prompt: Option<String>,
@@ -287,7 +302,9 @@ enum Msg {
     Clear,
 
     // OpenAI
-    /// Updates App.prompt onchange
+    /// Updates user_key
+    UpdateUserKey(String),
+    /// Updates prompt onchange
     UpdatePrompt(String),
     /// Sends prompt to OpenAI which generates a schema onclick
     GenerateSchema,
@@ -1493,9 +1510,10 @@ impl Component for Model {
         default_document_type.properties.push(Property::default());
         Self {
             document_types: vec![default_document_type],
-            json_object: vec![],
+            json_object: Vec::new(),
             imported_json: String::new(),
-            error_messages: vec![],
+            error_messages: Vec::new(),
+            user_key: String::new(),
             prompt: String::new(),
             schema: String::new(),
             history: Vec::new(),
@@ -1787,10 +1805,15 @@ impl Component for Model {
             }
             
             // OpenAI
+            Msg::UpdateUserKey(key) => {
+                self.user_key = key;
+            },
             Msg::UpdatePrompt(val) => {
                 self.prompt = val;
             },
             Msg::GenerateSchema => {
+
+                let user_key = self.user_key.clone();
 
                 // Prepend the appropriate default prompt
                 let prompt = if self.schema.is_empty() {
@@ -1808,7 +1831,7 @@ impl Component for Model {
 
                 let callback = ctx.link().callback(Msg::ReceiveSchema);
                 spawn_local(async move {
-                    let result = call_openai(&prompt).await;
+                    let result = call_openai(&prompt, &user_key).await;
                     callback.emit(result);
                 });
     
@@ -1876,6 +1899,12 @@ impl Component for Model {
         // html
         html! {
             <main class="home">
+                <br/>
+                <input type="password"
+                    placeholder="Paste OpenAI API key here"
+                    value={self.user_key.clone()}
+                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                />
                 <body>
                     <div class="container_ai">
                         <div class="top-section_ai">
@@ -1913,6 +1942,9 @@ impl Component for Model {
                                         html! {}
                                     }
                                 }    
+                            </div>
+                            <div class="error-text">
+                                {self.error_messages_ai.clone()}
                             </div>
                             <br/><br/>
                         </div>
