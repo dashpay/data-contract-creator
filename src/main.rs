@@ -1862,7 +1862,7 @@ impl Component for Model {
                         };
                     },
                     Err(err) => {
-                        self.error_messages_ai.push(format!("Error: {:?}", err));
+                        self.error_messages_ai = vec![err.to_string()];
                     },
                 }
                 self.loading = false;
@@ -1932,16 +1932,12 @@ impl Component for Model {
                                 {
                                     if self.loading {
                                         html! {
-                                            <div class="loader_ai">
-                                                <div class="dot_ai"></div>
-                                                <div class="dot_ai"></div>
-                                                <div class="dot_ai"></div>
-                                            </div>
+                                            <div class="loader_ai"></div>
                                         }
                                     } else {
                                         html! {}
                                     }
-                                }    
+                                }                                 
                             </div>
                             <div class="error-text_ai">
                                 {self.error_messages_ai.clone()}
