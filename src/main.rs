@@ -134,7 +134,7 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
             console::log_1(&JsValue::from_str(schema_json));
             match serde_json::from_str::<serde_json::Value>(schema_json) {
                 Ok(_) => Ok(schema_json.to_string()),
-                Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON. Suggest to try again.")),
+                Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON.")),
             }
         }
         _ => Err(anyhow::anyhow!("No valid JSON found in the returned text.")),
@@ -1459,31 +1459,6 @@ impl Model {
             }
         }
     }
-
-    // This can probably just be combined with validate()
-    /// Validates for AI-generated schema 
-    // fn validate_ai(&mut self) -> Result<Vec<String>, String> {
-    //     let json_obj: serde_json::Value = match serde_json::from_str(&self.schema) {
-    //         Ok(json) => json,
-    //         Err(e) => return Err(format!("Error parsing schema: {}. Suggest refreshing.", e)),
-    //     };
-    
-    //     let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
-    //     let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
-    //     let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
-    //     let owner_id = Identifier::random();
-    //     let contract = match factory.create(owner_id, json_obj.clone().into(), None, None) {
-    //         Ok(contract) => contract,
-    //         Err(e) => return Err(format!("Error creating contract: {}", e)),
-    //     };
-    
-    //     let results = contract.data_contract.validate(
-    //         &contract.data_contract.to_cleaned_object().expect("Descriptive error message")
-    //     );
-    //     let errors = results.unwrap_or_default().errors;
-    
-    //     Ok(self.extract_basic_error_messages(&errors))
-    // }        
     
     /// Extracts the BasicError messages, since they are the only ones we are interested in
     fn extract_basic_error_messages(&self, errors: &[ConsensusError]) -> Vec<String> {
@@ -1867,11 +1842,7 @@ impl Component for Model {
                         self.json_object = Some(self.generate_json_object()).unwrap();
                         self.error_messages = Some(self.validate()).unwrap();
                         self.imported_json = String::new();
-        
-                        // match self.validate_ai() {
-                        //     Ok(messages) => self.error_messages_ai = messages,
-                        //     Err(err) => self.error_messages_ai.push(err),
-                        // };
+
                     },
                     Err(err) => {
                         self.error_messages_ai = vec![err.to_string()];
