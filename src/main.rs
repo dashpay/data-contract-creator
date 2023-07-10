@@ -1,4 +1,8 @@
 //! Dash Platform Data Contract Creator
+//! 
+//! This web app allows users to generate data contract schemas using ChatGPT and a dynamic form. 
+//! They also have the ability to import existing contracts and edit them. 
+//! The schemas are validated against Dash Platform Protocol and error messages are provided if applicable.
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serde::{Serialize, Deserialize};
@@ -9,9 +13,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement, console};
 
-//const OPENAI_API_KEY: &str = "your key here" ;
-
-// Prepended to the prompt if App.schema is empty
+// Context prepended to the first user-input prompt, when creating a new contract
 const FIRST_PROMPT_PRE: &str = r#"
 Here is the an example Dash Platform data contract JSON schema. It's for the Dashpay app, which is meant to be similar to Venmo, but for the Dash Platform blockchain. It has two document types: "profile", "contactInfo", and "contactRequest".
 
@@ -31,7 +33,7 @@ Do not explain anything or return anything else other than a properly formatted 
 
 "#;
 
-// Prepended to the prompt if App.schema is empty
+// Context prepended to user-input prompts after the first prompt. The current schema comes after this, then the user-input context.
 const SECOND_PROMPT_PRE: &str = r#"
 The following requirements must be followed for Dash Platform data contracts: 
  - Indexes may only have "asc" sort order. 
@@ -47,6 +49,8 @@ Do not explain anything or return anything else other than a properly formatted 
 "#;
 
 /// Calls OpenAI
+/// For text-davinci-003, max_tokens 3000 is the most we can reasonably allow. 
+/// Temperature is like a randomness/creativity factor. Temps above 0.7 start to produce bad results. 0.2 seems to be optimal.
 pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyhow::Error> {
     let params = serde_json::json!({
         "model": "text-davinci-003",
@@ -97,7 +101,8 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
         None => return Err(anyhow::anyhow!("Failed to convert JsValue to String")),
     };
 
-    console::log_1(&text_js); // log the JsValue
+    // Log to console
+    console::log_1(&text_js);
 
     if !response.ok() {
         let status = response.status();
@@ -113,6 +118,7 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     let json: serde_json::Value = serde_json::from_str(&text).unwrap();
     let schema_text = json["choices"][0]["text"].as_str().unwrap_or("");
 
+    // Extract the JSON schema from the response
     let start = schema_text.find('{');
     let end = schema_text.rfind('}');
 
@@ -128,25 +134,46 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     }
 }
 
-/// Model is the umbrella structs that contains all the document types 
-/// for the contract and the vector of strings comprising the json object to be output
+/// Anything that can be changed with the interface must go in Model
 struct Model {
+
+    // Dynamic form fields
+
     /// A vector of document types
     document_types: Vec<DocumentType>,
+
     /// Each full document type is a single string in json_object
     json_object: Vec<String>,
-    /// A string containing a full data contract
+
+    /// A string containing a full imported data contract
     imported_json: String,
+
     /// DPP validation error messages
     error_messages: Vec<String>,
 
-    // OpenAI
+
+
+    // OpenAI fields
+
+    /// The API key
     user_key: String,
+
+    /// The prompt sent to API
     prompt: String,
+
+    /// The schema extracted from the API response
     schema: String,
+
+    /// Necessary to show a loader while awaiting response
     temp_prompt: Option<String>,
+
+    /// History of prompts
     history: Vec<String>,
+
+    /// True while awaiting response
     loading: bool,
+
+    /// Error messages from the API
     error_messages_ai: Vec<String>,
 }
 
@@ -225,7 +252,7 @@ impl Default for IndexProperties {
     }
 }
 
-/// Property data types
+/// Property data types enum
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 enum DataType {
     #[default]
@@ -302,15 +329,10 @@ enum Msg {
     Clear,
 
     // OpenAI
-    /// Updates user_key
     UpdateUserKey(String),
-    /// Updates prompt onchange
     UpdatePrompt(String),
-    /// Sends prompt to OpenAI which generates a schema onclick
     GenerateSchema,
-    /// Takes a schema and sets to App.schema
     ReceiveSchema(Result<String, anyhow::Error>),
-    /// Clear the input box after submission and response
     ClearInput,
 }
 
@@ -1430,7 +1452,33 @@ impl Model {
             }
         }
     }
+
+    // This can probably just be combined with validate()
+    /// Validates for AI-generated schema 
+    fn validate_ai(&mut self) -> Result<Vec<String>, String> {
+        let json_obj: serde_json::Value = match serde_json::from_str(&self.schema) {
+            Ok(json) => json,
+            Err(e) => return Err(format!("Error parsing schema: {}. Suggest refreshing.", e)),
+        };
     
+        let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
+        let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
+        let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
+        let owner_id = Identifier::random();
+        let contract = match factory.create(owner_id, json_obj.clone().into(), None, None) {
+            Ok(contract) => contract,
+            Err(e) => return Err(format!("Error creating contract: {}", e)),
+        };
+    
+        let results = contract.data_contract.validate(
+            &contract.data_contract.to_cleaned_object().expect("Descriptive error message")
+        );
+        let errors = results.unwrap_or_default().errors;
+    
+        Ok(self.extract_basic_error_messages(&errors))
+    }        
+    
+    /// Extracts the BasicError messages, since they are the only ones we are interested in
     fn extract_basic_error_messages(&self, errors: &[ConsensusError]) -> Vec<String> {
         let messages: Vec<String> = errors
             .iter()
@@ -1452,55 +1500,9 @@ impl Model {
     
         messages
     }
-
-    // OpenAI
-    fn validate_ai(&mut self) -> Result<Vec<String>, String> {
-        let json_obj: serde_json::Value = match serde_json::from_str(&self.schema) {
-            Ok(json) => json,
-            Err(e) => return Err(format!("Error parsing schema: {}. Suggest refreshing.", e)),
-        };
-    
-        let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
-        let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
-        let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
-        let owner_id = Identifier::random();
-        let contract = match factory.create(owner_id, json_obj.clone().into(), None, None) {
-            Ok(contract) => contract,
-            Err(e) => return Err(format!("Error creating contract: {}", e)),
-        };
-    
-        let results = contract.data_contract.validate(
-            &contract.data_contract.to_cleaned_object().expect("Descriptive error message")
-        );
-        let errors = results.unwrap_or_default().errors;
-    
-        Ok(self.extract_basic_error_messages_ai(&errors))
-    }    
-
-    fn extract_basic_error_messages_ai(&self, errors: &[ConsensusError]) -> Vec<String> {
-        let messages: Vec<String> = errors
-            .iter()
-            .filter_map(|error| {
-                if let ConsensusError::BasicError(inner) = error {
-                    if let dpp::errors::consensus::basic::basic_error::BasicError::JsonSchemaError(json_error) = inner {
-                        Some(format!("JsonSchemaError: {}, Path: {}", json_error.error_summary().to_string(), json_error.instance_path().to_string()))
-                    } else { 
-                        Some(format!("{}", inner)) 
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect();
-    
-        let messages: HashSet<String> = messages.into_iter().collect();
-        let messages: Vec<String> = messages.into_iter().collect();
-    
-        messages
-    }
-    
 }
 
+/// Yew component functions
 impl Component for Model {
     type Message = Msg;
     type Properties = ();
@@ -1862,7 +1864,7 @@ impl Component for Model {
                         };
                     },
                     Err(err) => {
-                        self.error_messages_ai.push(format!("Error: {:?}", err));
+                        self.error_messages_ai = vec![err.to_string()];
                     },
                 }
                 self.loading = false;
@@ -1872,7 +1874,6 @@ impl Component for Model {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-
         let onsubmit = ctx.link().callback(|event: SubmitEvent| {
             event.prevent_default();
             Msg::GenerateSchema
@@ -1932,16 +1933,12 @@ impl Component for Model {
                                 {
                                     if self.loading {
                                         html! {
-                                            <div class="loader_ai">
-                                                <div class="dot_ai"></div>
-                                                <div class="dot_ai"></div>
-                                                <div class="dot_ai"></div>
-                                            </div>
+                                            <div class="loader_ai"></div>
                                         }
                                     } else {
                                         html! {}
                                     }
-                                }    
+                                }                                 
                             </div>
                             <div class="error-text_ai">
                                 {self.error_messages_ai.clone()}
