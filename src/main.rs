@@ -15,9 +15,29 @@ use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement, co
 
 // Context prepended to the first user-input prompt, when creating a new contract
 const FIRST_PROMPT_PRE: &str = r#"
-Here is the an example Dash Platform data contract JSON schema. It's for the Dashpay app, which is meant to be similar to Venmo, but for the Dash Platform blockchain. It has two document types: "profile", "contactInfo", and "contactRequest".
+Here is the an example Dash Platform data contract JSON schema. It's for the Dashpay app, which is meant to be similar to Venmo, but for the Dash Platform blockchain. It has three document types: "profile", "contactInfo", and "contactRequest".
 
 {"profile":{"type":"object","indices":[{"name":"ownerId","properties":[{"$ownerId":"asc"}],"unique":true},{"name":"ownerIdAndUpdatedAt","properties":[{"$ownerId":"asc"},{"$updatedAt":"asc"}]}],"properties":{"avatarUrl":{"type":"string","format":"uri","maxLength":2048},"avatarHash":{"type":"array","byteArray":true,"minItems":32,"maxItems":32,"description":"SHA256 hash of the bytes of the image specified by avatarUrl"},"avatarFingerprint":{"type":"array","byteArray":true,"minItems":8,"maxItems":8,"description":"dHash the image specified by avatarUrl"},"publicMessage":{"type":"string","maxLength":140},"displayName":{"type":"string","maxLength":25}},"required":["$createdAt","$updatedAt"],"additionalProperties":false},"contactInfo":{"type":"object","indices":[{"name":"ownerIdAndKeys","properties":[{"$ownerId":"asc"},{"rootEncryptionKeyIndex":"asc"},{"derivationEncryptionKeyIndex":"asc"}],"unique":true},{"name":"ownerIdAndUpdatedAt","properties":[{"$ownerId":"asc"},{"$updatedAt":"asc"}]}],"properties":{"encToUserId":{"type":"array","byteArray":true,"minItems":32,"maxItems":32},"rootEncryptionKeyIndex":{"type":"integer","minimum":0},"derivationEncryptionKeyIndex":{"type":"integer","minimum":0},"privateData":{"type":"array","byteArray":true,"minItems":48,"maxItems":2048,"description":"This is the encrypted values of aliasName + note + displayHidden encoded as an array in cbor"}},"required":["$createdAt","$updatedAt","encToUserId","privateData","rootEncryptionKeyIndex","derivationEncryptionKeyIndex"],"additionalProperties":false},"contactRequest":{"type":"object","indices":[{"name":"ownerIdUserIdAndAccountRef","properties":[{"$ownerId":"asc"},{"toUserId":"asc"},{"accountReference":"asc"}],"unique":true},{"name":"ownerIdUserId","properties":[{"$ownerId":"asc"},{"toUserId":"asc"}]},{"name":"userIdCreatedAt","properties":[{"toUserId":"asc"},{"$createdAt":"asc"}]},{"name":"ownerIdCreatedAt","properties":[{"$ownerId":"asc"},{"$createdAt":"asc"}]}],"properties":{"toUserId":{"type":"array","byteArray":true,"minItems":32,"maxItems":32,"contentMediaType":"application/x.dash.dpp.identifier"},"encryptedPublicKey":{"type":"array","byteArray":true,"minItems":96,"maxItems":96},"senderKeyIndex":{"type":"integer","minimum":0},"recipientKeyIndex":{"type":"integer","minimum":0},"accountReference":{"type":"integer","minimum":0},"encryptedAccountLabel":{"type":"array","byteArray":true,"minItems":48,"maxItems":80},"autoAcceptProof":{"type":"array","byteArray":true,"minItems":38,"maxItems":102},"coreHeightCreatedAt":{"type":"integer","minimum":1}},"required":["$createdAt","toUserId","encryptedPublicKey","senderKeyIndex","recipientKeyIndex","accountReference"],"additionalProperties":false}}
+
+The following requirements must be followed in Dash Platform data contracts: 
+ - Indexes may only have "asc" sort order. 
+ - All "array" properties must specify ""byteArray": true". 
+ - All "string" properties that are used in indexes must specify "maxLength", and it cannot be more than 63. 
+ - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255. 
+ - All "object" properties must define at least 1 property within themselves. 
+
+Note that not all properties need to be included in the "required" array. 
+Also note that $ownerId, $createdAt, and $updatedAt are the only properties that can be prefixed with a "$", and are the only built-in "system properties" that can be used in a data contract and don't need to be defined in its properties.
+ 
+Given this background, generate a highly comprehensive data contract JSON schema using the context below. 
+Include descriptions for every document type and property. Be creative and extensive and utilize multiple document types. 
+Include indexes for any properties that it makes sense for a useful app to index. 
+Do not explain anything or return anything else other than a properly formatted data contract JSON schema:
+
+"#;
+
+// Context prepended to user-input prompts after the first prompt. The current schema comes after this, then the user-input context.
+const SECOND_PROMPT_PRE: &str = r#"
 The following requirements must be followed in Dash Platform data contracts: 
  - Indexes may only have "asc" sort order. 
  - All "array" properties must specify ""byteArray": true". 
@@ -26,23 +46,9 @@ The following requirements must be followed in Dash Platform data contracts:
  - All "object" properties must define at least 1 property within themselves. 
 
 Note that not all properties need to be included in the "required" array.
- 
-Given this background, generate a highly comprehensive data contract JSON schema using the context below. 
-Include descriptions for every document type and property. Be creative and extensive and utilize multiple document types. 
-Do not explain anything or return anything else other than a properly formatted JSON schema:
+Also note that $ownerId, $createdAt, and $updatedAt are the only properties that can be prefixed with a "$", and are the only built-in "system properties" that can be used in a data contract and don't need to be defined in its properties.
 
-"#;
-
-// Context prepended to user-input prompts after the first prompt. The current schema comes after this, then the user-input context.
-const SECOND_PROMPT_PRE: &str = r#"
-The following requirements must be followed for Dash Platform data contracts: 
- - Indexes may only have "asc" sort order. 
- - All "array" properties must specify ""byteArray": true". 
- - All "string" properties that are used in indexes must specify "maxLength", which cannot be more than 63. 
- - All "array" properties that are used in indexes must specify "maxItems", which must be less than or equal to 255. 
- - All "object" properties must define at least 1 property within themselves.
-
-Make the following changes to this Dash Platform data contract JSON schema. 
+Make the following change(s) to this Dash Platform data contract JSON schema, along with any other changes that are necessary to make it valid according to the rules above. 
 Note that the highest-level keys in the data contract are called "document types".
 Do not explain anything or return anything else other than a properly formatted JSON schema:
 
@@ -125,9 +131,10 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     match (start, end) {
         (Some(start), Some(end)) => {
             let schema_json = &schema_text[start..=end];
+            console::log_1(&JsValue::from_str(schema_json));
             match serde_json::from_str::<serde_json::Value>(schema_json) {
                 Ok(_) => Ok(schema_json.to_string()),
-                Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON")),
+                Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON.")),
             }
         }
         _ => Err(anyhow::anyhow!("No valid JSON found in the returned text.")),
@@ -1452,31 +1459,6 @@ impl Model {
             }
         }
     }
-
-    // This can probably just be combined with validate()
-    /// Validates for AI-generated schema 
-    fn validate_ai(&mut self) -> Result<Vec<String>, String> {
-        let json_obj: serde_json::Value = match serde_json::from_str(&self.schema) {
-            Ok(json) => json,
-            Err(e) => return Err(format!("Error parsing schema: {}. Suggest refreshing.", e)),
-        };
-    
-        let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
-        let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
-        let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
-        let owner_id = Identifier::random();
-        let contract = match factory.create(owner_id, json_obj.clone().into(), None, None) {
-            Ok(contract) => contract,
-            Err(e) => return Err(format!("Error creating contract: {}", e)),
-        };
-    
-        let results = contract.data_contract.validate(
-            &contract.data_contract.to_cleaned_object().expect("Descriptive error message")
-        );
-        let errors = results.unwrap_or_default().errors;
-    
-        Ok(self.extract_basic_error_messages(&errors))
-    }        
     
     /// Extracts the BasicError messages, since they are the only ones we are interested in
     fn extract_basic_error_messages(&self, errors: &[ConsensusError]) -> Vec<String> {
@@ -1828,6 +1810,9 @@ impl Component for Model {
     
                 // Save the prompt temporarily
                 self.temp_prompt = Some(self.prompt.clone());
+
+                // Reset AI error messages
+                self.error_messages_ai = Vec::new();
         
                 self.loading = true;
 
@@ -1857,11 +1842,7 @@ impl Component for Model {
                         self.json_object = Some(self.generate_json_object()).unwrap();
                         self.error_messages = Some(self.validate()).unwrap();
                         self.imported_json = String::new();
-        
-                        match self.validate_ai() {
-                            Ok(messages) => self.error_messages_ai = messages,
-                            Err(err) => self.error_messages_ai.push(err),
-                        };
+
                     },
                     Err(err) => {
                         self.error_messages_ai = vec![err.to_string()];
@@ -1941,7 +1922,13 @@ impl Component for Model {
                                 }                                 
                             </div>
                             <div class="error-text_ai">
-                                {self.error_messages_ai.clone()}
+                                {
+                                    if self.error_messages_ai.clone() != self.error_messages.clone() {
+                                        self.error_messages_ai.clone()
+                                    } else {
+                                        vec!["".to_string()]
+                                    }
+                                }
                             </div>
                             <br/><br/>
                         </div>
