@@ -5,6 +5,11 @@
 //! The schemas are validated against Dash Platform Protocol and error messages are provided if applicable.
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::io::Write;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use image::Luma;
+use qrcode::QrCode;
 use serde::{Serialize, Deserialize};
 use yew::{prelude::*, html, Component, Html, Event, InputEvent, FocusEvent, TargetCast};
 use serde_json::{json, Map, Value};
@@ -1860,11 +1865,52 @@ impl Component for Model {
             Msg::GenerateSchema
         });
 
+        // Format the JSON
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
         let json_obj: serde_json::Value = serde_json::from_str(&new_s).unwrap();
         let json_pretty = serde_json::to_string_pretty(&json_obj).unwrap();
-                                
+
+        // Generate a QR code for each chunk only if new_s is more than 10 characters.
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(new_s.as_bytes()).unwrap();
+        let compressed_data = encoder.finish().unwrap();
+
+        const MAX_CHUNK_SIZE: usize = 2953;
+
+        let mut images = Vec::new();
+        if new_s.len() >= 10 {
+            let chunks = compressed_data.chunks(MAX_CHUNK_SIZE);
+            for chunk in chunks {
+                let code = match QrCode::with_version(chunk, qrcode::Version::Normal(40), qrcode::EcLevel::L) {
+                    Ok(code) => code,
+                    Err(e) => {
+                        // This chunk is too large to fit in a version 40 QR code. You might want to handle this case differently.
+                        eprintln!("Failed to create QR code: {}", e);
+                        continue;
+                    }
+                };
+
+                let image = code
+                    .render::<Luma<u8>>()
+                    .quiet_zone(true)
+                    .module_dimensions(2, 2)
+                    .build();
+            
+                let mut buffer: Vec<u8> = vec![];
+                image::png::PNGEncoder::new(&mut buffer).encode(
+                    &image.clone().into_raw(),
+                    image.width(),
+                    image.height(),
+                    image::ColorType::Gray(8),
+                ).unwrap();
+            
+                let base64_image = base64::encode(&buffer);
+                images.push(base64_image);
+            }
+        }
+
+        // Display "without whitespace" textarea only upon submission
         let textarea = if self.json_object.len() != 0 {
             html! {
                 <textarea class="textarea-no-whitespace" id="json_output" value={if self.json_object.len() != 0 as usize {
@@ -1988,6 +2034,13 @@ impl Component for Model {
                             <h3>{if !self.history.is_empty() {"Prompt history:"} else {""}}</h3>
                             {for self.history.iter().map(|input| html! {
                                 <div>{input}</div>
+                            })}
+                        </div>
+                        <br/><br/>
+                        <div class="qr-code">
+                            <h3>{if new_s.len() > 10 {"QR codes:"} else {""}}</h3>
+                            {for images.iter().map(|base64_image| html! {
+                                <img src={format!("data:image/png;base64,{}", base64_image)} />
                             })}
                         </div>
                     </div>

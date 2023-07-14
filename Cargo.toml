@@ -15,6 +15,10 @@ wasm-bindgen = "0.2.86"
 wasm-bindgen-futures = "0.4.37"
 anyhow = "1.0.71"
 dpp = { git="https://github.com/pauldelucia/platform.git", package="dpp", default-features = false, features = ["cbor"] }
+qrcode = "0.11.0"
+image = "0.22.0"
+base64 = "0.21.2"
+flate2 = "1.0.26"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
