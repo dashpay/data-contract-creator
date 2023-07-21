@@ -25,6 +25,7 @@ body {
   padding: 20px;
   padding-top: 5px;
   min-height: 100vh;
+  background: #F5F6F7;
 }
 
 pre {
@@ -32,11 +33,17 @@ pre {
 }
 
 /* General components */
+
+.forms-line-names {
+  display: flex;
+  justify-content: space-between;
+}
+
 input[type="text"] {
-  border: 2px solid $light-gray;
-  border-radius: 4px;
-  padding: 0.5rem;
-  width: 50%;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  width: 90%;
   &:focus {
     outline: none;
     border-color: $light-blue;
@@ -54,9 +61,9 @@ input[type="password"] {
 }
 
 input[type="text2"] {
-  border: 2px solid $light-gray;
-  border-radius: 4px;
-  padding: 0.5rem;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
   width: 90%;
   &:focus {
     outline: none;
@@ -68,10 +75,9 @@ input[type="text2"] {
 }
 
 input[type="text3"] {
-  border: 2px solid $light-gray;
-  border-radius: 4px;
-  padding: 0.5rem;
-  max-width: 100%;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
   width: 90%;
   &:focus {
     outline: none;
@@ -83,10 +89,9 @@ input[type="text3"] {
 }
 
 input[type="text4"] {
-  border: 2px solid $light-gray;
-  border-radius: 4px;
-  padding: 0.5rem;
-  max-width: 100%;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
   width: 90%;
   &:focus {
     outline: none;
@@ -102,9 +107,9 @@ input[type="checkbox"] {
 }
 
 input[type="number"] {
-  border: 2px solid $light-gray;
-  border-radius: 4px;
-  padding: 0.5rem;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
   width: 90%;
   &:focus {
     outline: none;
@@ -167,6 +172,51 @@ select {
   }
 }
 
+.toggle-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  opacity: 0;
+  cursor: pointer;
+}
+.toggle-label {
+  width: 75px;
+  height: 42px;
+  background: #ccc;
+  position: relative;
+  display: inline-block;
+  border-radius: 46px;
+  transition: 0.4s;
+  box-sizing: border-box;
+  &:after {
+    content: '';
+    position: absolute;
+    width: 42px;
+    height: 42px;
+    border-radius: 100%;
+    left: 0;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    transition: 0.4s;
+  }
+}
+// input:ckeecked
+.toggle-input:checked {
+  +.toggle-label{
+    background-color: #4BD865;
+    &:after{
+      left: 40px;
+    }
+  }
+}
+.checkbox-block{
+  position: relative;
+}
 .button-clear {
   border: none;
   background-color: rgb(233, 233, 233);
@@ -183,18 +233,16 @@ select {
 }
 
 .input-container {
-  border: 1px solid black;
-  background-color: whitesmoke;
-  padding: 10px;
-  border-radius: 10px;
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 30px;
 }
 
 .output-container {
-  border: 1px solid black;
-  background-color: whitesmoke;
+  background-color: #fff;
   padding: 10px;
   //width: 90%;
-  border-radius: 10px;
+  border-radius: 30px;
   overflow-wrap: break-word;
 }
 

@@ -417,11 +417,11 @@ impl Model {
                         
                             <div class="forms-line">
                                 <label>{"Require $createdAt:   "}</label>
-                                <input type="checkbox" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <input type="checkbox" class="blue-check" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
                             </div>
                             <div class="forms-line">
                                 <label>{"Require $updatedAt:   "}</label>
-                                <input type="checkbox" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <input type="checkbox" class="blue-check" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
                 </div>                        
                     
                 </div>
@@ -463,24 +463,29 @@ impl Model {
         html! {
             <>
                 <div class="forms-line-names">
-                    {format!("Property {} name", prop_index+1)}
-                    {"Type"}
-                    {"Required"}
+                 <div class="form-headers">
+                  <label>{format!("Property {} name", prop_index+1)}</label>
+                  <input type="text3" placeholder={format!("Property {} name", prop_index+1)} value={self.document_types[doc_index].properties[prop_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                 </div>
+                 <div class="form-headers">
+                  <label>{"Type"}</label>
+                  <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| {
+                    let selected_data_type = e.target_dyn_into::<HtmlSelectElement>().unwrap().value();
+                    let new_property = default_additional_properties(selected_data_type.as_str());
+                    Msg::UpdatePropertyType(doc_index, prop_index, new_property)
+                })}>
+                    {for data_type_options.iter().map(|option| html! {
+                        <option value={String::from(*option)} selected={&String::from(*option)==&selected_data_type}>{String::from(*option)}</option>
+                    })}
+                  </select>
+                 </div>
+                 <div class="checkbox-block form-headers">
+                  <label>{"Required"}</label>
+                  <input type="checkbox" id="toggle" class="toggle-input"  checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                  <label for="toggle" class="toggle-label">
+                 </div>
+                 <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"Remove"}</button>
                 </div>
-                <div class="forms-line-names">
-                    <input type="text3" placeholder={format!("Property {} name", prop_index+1)} value={self.document_types[doc_index].properties[prop_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                        <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| {
-                            let selected_data_type = e.target_dyn_into::<HtmlSelectElement>().unwrap().value();
-                            let new_property = default_additional_properties(selected_data_type.as_str());
-                            Msg::UpdatePropertyType(doc_index, prop_index, new_property)
-                        })}>
-                            {for data_type_options.iter().map(|option| html! {
-                                <option value={String::from(*option)} selected={&String::from(*option)==&selected_data_type}>{String::from(*option)}</option>
-                            })}
-                        </select>
-                    <input type="checkbox" checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                    <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"Remove"}</button>
-                    </div>
                 <p><b>{if selected_data_type != String::from("Object") { "Optional property parameters:" } else {""}}</b></p>
                 <div class="forms-line">
                         {additional_properties}
