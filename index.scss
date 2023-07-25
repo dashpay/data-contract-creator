@@ -429,6 +429,14 @@ span.clear {
   text-align: center;
 }
 
+@media only screen and (max-width:900px){
+  .columns {
+    flex-direction: column;
+  }
+  .column-left, .column-right {
+    width: 100%;
+}
+}
 // AI
 // Variables
 $body-color: #008de4;
@@ -565,3 +573,6 @@ $body-color: #008de4;
     overflow-x: auto;
   }
 }
+
+
+
