@@ -417,12 +417,14 @@ impl Model {
                         
                             <div class="forms-line">
                                 <label>{"Require $createdAt:   "}</label>
-                                <input type="checkbox" class="blue-check" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <input type="checkbox" id="toggle1" class="toggle-input" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <label for="toggle1" class="toggle-label"></label>
                             </div>
                             <div class="forms-line">
                                 <label>{"Require $updatedAt:   "}</label>
-                                <input type="checkbox" class="blue-check" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                </div>                        
+                                <input type="checkbox" id="toggle2" class="toggle-input" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <label for="toggle2" class="toggle-label"></label>
+                            </div>                        
                     
                 </div>
                 <div>
@@ -482,9 +484,9 @@ impl Model {
                  <div class="checkbox-block form-headers">
                   <label>{"Required"}</label>
                   <input type="checkbox" id="toggle" class="toggle-input"  checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                  <label for="toggle" class="toggle-label">
+                  <label for="toggle" class="toggle-label"></label>
                  </div>
-                 <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"Remove"}</button>
+                 <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"X"}</button>
                 </div>
                 <p><b>{if selected_data_type != String::from("Object") { "Optional property parameters:" } else {""}}</b></p>
                 <div class="forms-line">
@@ -497,7 +499,8 @@ impl Model {
                             <input type="text3" value={self.document_types[doc_index].properties[prop_index].comment.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyComment(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
             </div>                        <p></p>
                     
-    </div>            </>
+    </div>            
+    </>
         }
     }
 
@@ -703,12 +706,11 @@ impl Model {
                                 <option value={String::from(*option)} selected={&String::from(*option)==&selected_data_type}>{String::from(*option)}</option>
                             })}
                         </select>
-                  
-                        <input type="checkbox" checked={match &self.document_types[doc_index].properties[prop_index].properties {
+                        <input type="checkbox" id="toggle3" class="toggle-input" checked={match &self.document_types[doc_index].properties[prop_index].properties {
                             Some(properties) => properties.get(recursive_prop_index).map(|property| property.required).unwrap_or(false),
                             None => false,
                         }} onchange={ctx.link().callback(move |e: Event| Msg::UpdateRecPropertyRequired(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-
+                        <label for="toggle3" class="toggle-label"></label>
                         <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveRecProperty(doc_index, prop_index, recursive_prop_index))}>{"Remove"}</button>
                 </div>
                 <p><b>{"Optional property parameters:"}</b></p>
@@ -909,7 +911,8 @@ impl Model {
                 <th>{""}</th>
 </div>            <div class="forms-line">
                 <input type="text3" placeholder={format!("Index {} name", index_index+1)} value={self.document_types[doc_index].indices[index_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexName(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                <input type="checkbox" checked={self.document_types[doc_index].indices[index_index].unique} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexUnique(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                <input type="checkbox" id="toggle4" class="toggle-input" checked={self.document_types[doc_index].indices[index_index].unique} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexUnique(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                <label for="toggle4" class="toggle-label"></label>
                 <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveIndex(doc_index, index_index))}>{"Remove"}</button>
 </div>            <div class="forms-line">
                 
@@ -947,7 +950,8 @@ impl Model {
                         <option value={String::from(*option)} selected={&String::from(*option)==current_sort}>{String::from(*option)}</option>
                     })}
                 </select>
-</div>        )
+</div>        
+            )
     }
 
     fn generate_json_object(&mut self) -> Vec<String> {

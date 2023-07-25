@@ -37,13 +37,20 @@ pre {
 .forms-line-names {
   display: flex;
   justify-content: space-between;
+  align-items: end;
+}
+.forms-line-names input, .forms-line-names select, .forms-line-names label {
+  margin-top: 5px;
+}
+.forms-line-names input[type="text3"]{
+  width: 88%;
 }
 
 input[type="text"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  width: 90%;
+  width: 95%;
   &:focus {
     outline: none;
     border-color: $light-blue;
@@ -58,13 +65,15 @@ input[type="password"] {
   top: 20px;
   left: 20px;
   width: 300px;
+  margin:5px 0;
 }
 
 input[type="text2"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  width: 90%;
+  margin:5px 0;
+  width: 95%;
   &:focus {
     outline: none;
     border-color: $light-blue;
@@ -78,7 +87,8 @@ input[type="text3"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  width: 90%;
+  margin:5px 0;
+  width: 95%;
   &:focus {
     outline: none;
     border-color: $light-blue;
@@ -92,7 +102,8 @@ input[type="text4"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  width: 90%;
+  margin:5px 0;
+  width: 95%;
   &:focus {
     outline: none;
     border-color: $light-blue;
@@ -103,14 +114,15 @@ input[type="text4"] {
 }
 
 input[type="checkbox"] {
-  width: 100px;
+  margin:5px 0;
 }
 
 input[type="number"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  width: 90%;
+  margin:5px 0;
+  width: 95%;
   &:focus {
     outline: none;
     border-color: $light-blue;
@@ -121,7 +133,11 @@ input[type="number"] {
 }
 
 select {
-  width: 100%;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 11px;
+  width: 90%;
+  background: #fff;
 }
 
 /* Buttons styles */
@@ -136,6 +152,14 @@ select {
   &:hover {
     cursor: pointer;
   }
+}
+.button.remove {
+  background-color: rgb(209 209 209);
+  color: #fff;
+  padding: 5px;
+  width: 40px;
+  border-radius: 50%;
+  height: 40px;
 }
 
 .button2 {
@@ -173,29 +197,25 @@ select {
 }
 
 .toggle-input {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 5;
+  position: inherit;
   opacity: 0;
   cursor: pointer;
 }
 .toggle-label {
-  width: 75px;
-  height: 42px;
-  background: #ccc;
+  width: 50px;
+  height: 30px;
+  background: #ededed;
   position: relative;
   display: inline-block;
   border-radius: 46px;
   transition: 0.4s;
   box-sizing: border-box;
+  cursor: pointer;
   &:after {
     content: '';
     position: absolute;
-    width: 42px;
-    height: 42px;
+    width: 30px;
+    height: 30px;
     border-radius: 100%;
     left: 0;
     top: 0;
@@ -208,9 +228,9 @@ select {
 // input:ckeecked
 .toggle-input:checked {
   +.toggle-label{
-    background-color: #4BD865;
+    background-color: #008de4;
     &:after{
-      left: 40px;
+      left: 24px;
     }
   }
 }
