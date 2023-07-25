@@ -711,7 +711,7 @@ impl Model {
                             None => false,
                         }} onchange={ctx.link().callback(move |e: Event| Msg::UpdateRecPropertyRequired(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
                         <label for="toggle3" class="toggle-label"></label>
-                        <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveRecProperty(doc_index, prop_index, recursive_prop_index))}>{"Remove"}</button>
+                        <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveRecProperty(doc_index, prop_index, recursive_prop_index))}>{"X"}</button>
                 </div>
                 <p><b>{"Optional property parameters:"}</b></p>
                 <div class="forms-line">
@@ -906,15 +906,22 @@ impl Model {
         html! {
             <>
             <div class="forms-line">
-                <th>{format!("Index {} name", index_index+1)}</th>
-                <th>{"Unique"}</th>
-                <th>{""}</th>
-</div>            <div class="forms-line">
+                {""}
+</div>            <div class="forms-line-names">
+                 <div class="form-headers"> 
+                 <label>{format!("Index {} name", index_index+1)}</label>
                 <input type="text3" placeholder={format!("Index {} name", index_index+1)} value={self.document_types[doc_index].indices[index_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexName(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                </div>
+                <div class="form-headers checkbox">
+                <label>{"Unique"}</label>
                 <input type="checkbox" id="toggle4" class="toggle-input" checked={self.document_types[doc_index].indices[index_index].unique} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexUnique(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
                 <label for="toggle4" class="toggle-label"></label>
-                <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveIndex(doc_index, index_index))}>{"Remove"}</button>
-</div>            <div class="forms-line">
+                </div>
+                <div class="form-headers">
+                <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveIndex(doc_index, index_index))}>{"X"}</button>
+                </div>
+                </div>            
+<div class="forms-line">
                 
                     
                         

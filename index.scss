@@ -54,7 +54,14 @@ pre {
   display: flex;
   justify-content: space-between;
 }
-
+.form-headers.checkbox {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.form-headers.checkbox input[type=checkbox]{
+  position: absolute;
+}
 input[type="text"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
@@ -148,7 +155,7 @@ select {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 11px;
-  width: 90%;
+  width: 100%;
   background: #fff;
 }
 
@@ -290,6 +297,7 @@ button.button.remove-text {
 
 .checkbox-block{
   position: relative;
+  width: 75px;
 }
 .button-clear {
   border: none;
