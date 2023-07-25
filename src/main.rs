@@ -411,16 +411,16 @@ impl Model {
                 <div class="form-line">
                     <h3>{"Properties"}</h3>
                             {for (0..self.document_types[index].properties.len()).map(|i| self.view_property(index, i, ctx))}
-                            <button class="button" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}>{"Add property"}</button>
+                            <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}><span class="plus">{"+"}</span>{"Add property"}</button>
                    </div>
                             
                         
-                            <div class="forms-line">
+                            <div class="forms-line-checkboxes">
                                 <label>{"Require $createdAt:   "}</label>
                                 <input type="checkbox" id="toggle1" class="toggle-input" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
                                 <label for="toggle1" class="toggle-label"></label>
                             </div>
-                            <div class="forms-line">
+                            <div class="forms-line-checkboxes">
                                 <label>{"Require $updatedAt:   "}</label>
                                 <input type="checkbox" id="toggle2" class="toggle-input" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
                                 <label for="toggle2" class="toggle-label"></label>
@@ -433,7 +433,7 @@ impl Model {
                         
                             {for (0..self.document_types[index].indices.len()).map(|i| self.view_index(index, i, ctx))}
                             <div class="forms-line">
-                                <button class="button" onclick={ctx.link().callback(move |_| Msg::AddIndex(index))}>{"Add index"}</button>
+                                <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddIndex(index))}><span class="plus">{"+"}</span>{"Add index"}</button>
                 </div>                        
                     
                 </div>
@@ -443,7 +443,7 @@ impl Model {
                 </div>
                 <br/>
                 <div>
-                <button class="button" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}>{format!("Remove document type {}", index+1)}</button>
+                <button class="button remove-text" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}>{format!("Remove document type {}", index+1)}</button>
                 </div>
             </div>
             <br/>
@@ -1860,8 +1860,7 @@ impl Component for Model {
                 <input type="password"
                     placeholder="Paste OpenAI API key here"
                     value={self.user_key.clone()}
-                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
-                />
+                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}/>
                 <body>
                     <div class="container_ai">
                         <div class="top-section_ai">
@@ -1908,14 +1907,15 @@ impl Component for Model {
                             <br/><br/>
                         </div>
                     </div>
+                    <div class="columns">
                     <div class="column-left">
 
                         // show input fields
-                        <p class="input-fields">{self.view_document_types(ctx)}</p>
+                        {self.view_document_types(ctx)}
 
                         <div class="button-container">
                             // add input fields for another document type and add one to Self::document_types
-                            <button class="button2" onclick={ctx.link().callback(|_| Msg::AddDocumentType)}>{"Add document type"}</button><br/>
+                            <button class="button2" onclick={ctx.link().callback(|_| Msg::AddDocumentType)}><span>{"+"}</span>{"Add document type"}</button>
 
                             // look at document_types and generate json object from it
                             <button class="button button-primary" onclick={ctx.link().callback(|_| Msg::Submit)}>{"Submit"}</button>
@@ -1926,7 +1926,7 @@ impl Component for Model {
                     <div class="column-right">
                     
                         // format and display json object
-                        <p class="output-container">
+                      <div class="input-container">
                             <h2>{"Contract"}</h2>
                             <h3>{if self.imported_json.len() == 0 && self.error_messages.len() != 0 {"Validation errors:"} else {""}}</h3>
                             <div>{
@@ -1955,9 +1955,11 @@ impl Component for Model {
                                 } else {String::from("Size: 0 bytes")}
                             }
                             </b></p>
-                            <div><button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}>{"Import"}</button></div>
-                            <div><button class="button-clear" onclick={ctx.link().callback(|_| Msg::Clear)}>{"Clear"}</button></div>
-                        </p>
+                            <div class="button-block">
+                              <button class="button-clear" onclick={ctx.link().callback(|_| Msg::Clear)}><span class="clear">{"X"}</span>{"Clear"}</button>
+                              <button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}>{"Import"}</button>
+                            </div>
+                        
                         <br/>
                         <div class="prompt-history">
                             <h3>{if !self.history.is_empty() {"Prompt history:"} else {""}}</h3>
@@ -1965,9 +1967,11 @@ impl Component for Model {
                                 <div>{input}</div>
                             })}
                         </div>
+                        </div>
                     </div>
-                </body>
-            </main>
+                </div>
+            </body>
+        </main>
         }
     }
 }

@@ -40,10 +40,19 @@ pre {
   align-items: end;
 }
 .forms-line-names input, .forms-line-names select, .forms-line-names label {
-  margin-top: 5px;
+  margin:5px 0;
 }
 .forms-line-names input[type="text3"]{
   width: 88%;
+}
+.forms-line-checkboxes {
+  display: flex;
+  margin: 10px 0;
+  justify-content: space-between;
+}
+.button-block {
+  display: flex;
+  justify-content: space-between;
 }
 
 input[type="text"] {
@@ -65,7 +74,10 @@ input[type="password"] {
   top: 20px;
   left: 20px;
   width: 300px;
-  margin:5px 0;
+  margin: 5px 0;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
 }
 
 input[type="text2"] {
@@ -149,6 +161,7 @@ select {
   border-radius: 5px;
   margin-top: 2px;
   margin-bottom: 2px;
+  font-weight: 600;
   &:hover {
     cursor: pointer;
   }
@@ -156,6 +169,7 @@ select {
 .button.remove {
   background-color: rgb(209 209 209);
   color: #fff;
+  font-weight: 600;
   padding: 5px;
   width: 40px;
   border-radius: 50%;
@@ -164,14 +178,21 @@ select {
 
 .button2 {
   border: none;
-  background-color: rgb(233, 233, 233);
-  padding: 10px 20px;
+  background-color: rgba(0, 141, 228, 0.08);
+  padding: 10px 35px;
   border-radius: 5px;
   margin-top: 2px;
+  font-size: 17px;
+  font-weight: 600;
   margin-bottom: 2px;
+  color: #008de4;
   &:hover {
     cursor: pointer;
   }
+}
+.button2 span {
+  padding-right: 6px;
+  font-size: 20px;
 }
 
 .button-primary {
@@ -183,17 +204,38 @@ select {
 .button-import {
   border: none;
   background-color: #008de4;
-  color: $text-color-bg-primary;
-  padding: 10px 20px;
+  color: rgb(233, 233, 233);
+  padding: 10px 30px;
   border-radius: 5px;
   margin-top: 2px;
   margin-bottom: 2px;
-  width: 80px;
-  flex-direction:row;
-  align-self: right;
+  font-size: 19px;
+  font-weight: 600;
   &:hover {
     cursor: pointer;
   }
+}
+button.button.property {
+  width: 100%;
+  font-size: 17px;
+  background: rgba(0, 141, 228, 0.08);
+  color: #008de4;
+  font-weight: 600;
+}
+button.button.property span {
+  color: #fff;
+  background: #008de4;
+  margin: 5px;
+  padding: 1px 6px;
+  border-radius: 50%;
+  font-size: 18px;
+}
+button.button.remove-text {
+  background: rgba(232, 92, 74, 0.1);
+  color: rgba(232, 92, 74, 1);
+  font-size: 17px;
+  font-weight: 600;
+  width: 100%;
 }
 
 .toggle-input {
@@ -234,24 +276,40 @@ select {
     }
   }
 }
+.forms-line-checkboxes .toggle-label{
+  height: 20px;
+  &:after{
+    width: 20px;
+    height: 20px;
+  }
+}
+.forms-line-checkboxes .toggle-input:checked 
+  +.toggle-label::after{
+    left: 32px;
+  }
+
 .checkbox-block{
   position: relative;
 }
 .button-clear {
   border: none;
-  background-color: rgb(233, 233, 233);
-  padding: 10px 20px;
+  background-color: #fff;
   border-radius: 5px;
-  margin-top: 2px;
-  margin-bottom: 2px;
   width: 80px;
-  flex-direction:row;
-  align-self: right;
+  color: rgb(151 151 151);
+  font-size: 16px;
+  font-weight: 600;
   &:hover {
     cursor: pointer;
   }
 }
-
+span.clear {
+  background: rgb(151, 151, 151);
+  color: #fff;
+  margin-right: 7px;
+  border-radius: 50%;
+  padding: 2px 6px;
+}
 .input-container {
   background-color: #fff;
   padding: 40px;
@@ -274,14 +332,15 @@ select {
 .indent {
   padding-left: 20px;
 }
-
+.columns{
+  display: flex;
+  justify-content: space-between;
+}
 .column-left {
-  float: left;
-  width: 49%;
+  width: 48%;
 }
 .column-right {
-  float: right;
-  width: 49%;
+  width: 48%;
 }
 
 .header {
@@ -301,10 +360,11 @@ select {
 
 .button-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
   width: 90%;
   padding-bottom: 30px;
+  justify-content: space-between;
+  margin: auto;
 }
 
 .note {
@@ -316,8 +376,11 @@ select {
 }
 
 .textarea-whitespace {
-  width: 99%;
+  width: 95%;
   height: 300px;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .textarea-no-whitespace {
@@ -460,12 +523,12 @@ $body-color: #008de4;
 
   input {
     width: 100%;
-    padding: 10px;
     font-size: 16px;
-    border: 1px solid gray;
-    border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
+    border: 1px solid rgba(29, 29, 31, 0.1);
+    border-radius: 8px;
+    padding: 12px;
   }
 
   input:focus {
@@ -475,7 +538,8 @@ $body-color: #008de4;
 
   button {
     padding: 10px 20px;
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: 600;
     background-color: $body-color;
     color: #fff;
     border: none;
