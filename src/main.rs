@@ -411,8 +411,8 @@ impl Model {
                 <div class="form-line">
                     <h3>{"Properties"}</h3>
                             {for (0..self.document_types[index].properties.len()).map(|i| self.view_property(index, i, ctx))}
-                            <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}><span class="plus">{"+"}</span>{"Add property"}</button>
-                   </div>
+                            <div class="add-index"><button class="button property" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}><span class="plus">{"+"}</span>{"Add property"}</button>
+                   </div></div>
                             
                         
                             <div class="forms-line-checkboxes">
@@ -432,9 +432,9 @@ impl Model {
                     
                         
                             {for (0..self.document_types[index].indices.len()).map(|i| self.view_index(index, i, ctx))}
-                            <div class="forms-line">
+                            <div class="forms-line"><div class="add-index">
                                 <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddIndex(index))}><span class="plus">{"+"}</span>{"Add index"}</button>
-                </div>                        
+                </div></div>                        
                     
                 </div>
                 <div>
@@ -442,7 +442,7 @@ impl Model {
                     <input type="text2" placeholder="Comment" value={self.document_types[index].comment.clone()} onblur={ctx.link().callback(move |e: FocusEvent| Msg::UpdateComment(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
                 </div>
                 <br/>
-                <div>
+                <div class="remove-text-button">
                 <button class="button remove-text" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}>{format!("Remove document type {}", index+1)}</button>
                 </div>
             </div>
@@ -465,28 +465,30 @@ impl Model {
         html! {
             <>
                 <div class="forms-line-names">
-                 <div class="form-headers">
-                  <label>{format!("Property {} name", prop_index+1)}</label>
-                  <input type="text3" placeholder={format!("Property {} name", prop_index+1)} value={self.document_types[doc_index].properties[prop_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                 </div>
-                 <div class="form-headers">
-                  <label>{"Type"}</label>
-                  <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| {
-                    let selected_data_type = e.target_dyn_into::<HtmlSelectElement>().unwrap().value();
-                    let new_property = default_additional_properties(selected_data_type.as_str());
-                    Msg::UpdatePropertyType(doc_index, prop_index, new_property)
-                })}>
-                    {for data_type_options.iter().map(|option| html! {
-                        <option value={String::from(*option)} selected={&String::from(*option)==&selected_data_type}>{String::from(*option)}</option>
-                    })}
-                  </select>
-                 </div>
-                 <div class="checkbox-block form-headers">
-                  <label>{"Required"}</label>
-                  <input type="checkbox" id="toggle" class="toggle-input"  checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                  <label for="toggle" class="toggle-label"></label>
-                 </div>
-                 <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"X"}</button>
+                    <div class="form-headers">
+                        <label>{format!("Property {} name", prop_index+1)}</label>
+                        <input type="text3" placeholder={format!("Property {} name", prop_index+1)} value={self.document_types[doc_index].properties[prop_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                    </div>
+                    <div class="form-headers">
+                        <label>{"Type"}</label>
+                        <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| {
+                            let selected_data_type = e.target_dyn_into::<HtmlSelectElement>().unwrap().value();
+                            let new_property = default_additional_properties(selected_data_type.as_str());
+                            Msg::UpdatePropertyType(doc_index, prop_index, new_property)
+                            })}>
+                            {for data_type_options.iter().map(|option| html! {
+                                <option value={String::from(*option)} selected={&String::from(*option)==&selected_data_type}>{String::from(*option)}</option>
+                            })}
+                        </select>
+                    </div>
+                    <div class="form-headers">
+                        <label>{"Required"}</label>
+                        <div class="checkbox-block">
+                            <input type="checkbox" id="toggle" class="toggle-input"  checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                            <label for="toggle" class="toggle-label"></label>
+                        </div>
+                    </div>
+                    <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"X"}</button>
                 </div>
                 <p><b>{if selected_data_type != String::from("Object") { "Optional property parameters:" } else {""}}</b></p>
                 <div class="forms-line">
