@@ -4,6 +4,13 @@
     "ghcr.io/devcontainers/features/rust:1": {}
   },
 
+  // Hosts with less than this take 10-15 minutes to initialize
+  // "hostRequirements": {
+  //   "cpus": 4,
+  //   "memory": "8gb",
+  //   "storage": "32gb"
+  // },
+ 
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": ".devcontainer/post-install.sh"
 }
