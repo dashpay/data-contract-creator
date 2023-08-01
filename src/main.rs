@@ -165,6 +165,9 @@ struct Model {
     /// The API key
     user_key: String,
 
+    /// Is the key valid?
+    key_valid: bool,
+
     /// The prompt sent to API
     prompt: String,
 
@@ -336,6 +339,7 @@ enum Msg {
     Clear,
 
     // OpenAI
+    SubmitKey,
     UpdateUserKey(String),
     UpdatePrompt(String),
     GenerateSchema,
@@ -1482,6 +1486,7 @@ impl Component for Model {
             imported_json: String::new(),
             error_messages: Vec::new(),
             user_key: String::new(),
+            key_valid: false,
             prompt: String::new(),
             schema: String::new(),
             history: Vec::new(),
@@ -1773,6 +1778,11 @@ impl Component for Model {
             }
             
             // OpenAI
+            Msg::SubmitKey => {
+                if self.user_key.len() == 51 {
+                    self.key_valid = true;
+                }
+            },
             Msg::UpdateUserKey(key) => {
                 self.user_key = key;
             },
@@ -1865,11 +1875,6 @@ impl Component for Model {
         // html
         html! {
             <main class="home">
-                <br/>
-                <input type="password"
-                    placeholder="Paste OpenAI API key here"
-                    value={self.user_key.clone()}
-                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}/>
                 <body>
                     <div class="container_ai">
                         <div class="top-section_ai">
@@ -1878,22 +1883,35 @@ impl Component for Model {
                         </div>
                         <div class="content-container_ai">
                             <div class="input-container_ai">
-                                <form onsubmit={onsubmit} class="form-container_ai">
-                                    <div class="input-button-container_ai">
-                                        <input
-                                            placeholder={
-                                                if self.schema.is_empty() {
-                                                    "Describe your app here"
-                                                } else {
-                                                    "Describe any adjustments here"
-                                                }
-                                            }
-                                            value={self.prompt.clone()}
-                                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
-                                        />
-                                        <button type="submit">{"Generate"}</button>
+                                { if !self.key_valid { html! {
+                                    <div class="form-container_ai">
+                                        <div class="input-button-container_ai">
+                                            <input type="password"
+                                                placeholder="Paste OpenAI API key here"
+                                                value={self.user_key.clone()}
+                                                oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                                            <button onclick={ctx.link().callback(|_| Msg::SubmitKey)}>{"Submit"}</button>
+                                        </div>
                                     </div>
-                                </form>
+                                  }} else { html! {
+                                    <form onsubmit={onsubmit} class="form-container_ai">
+                                        <div class="input-button-container_ai">
+                                            <input
+                                                placeholder={
+                                                    if self.schema.is_empty() {
+                                                        "Describe your app here"
+                                                    } else {
+                                                        "Describe any adjustments here"
+                                                    }
+                                                }
+                                                value={self.prompt.clone()}
+                                                oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                                            />
+                                            <button type="submit">{"Generate"}</button>
+                                        </div>
+                                    </form>
+                                  }}
+                                }
                                 {
                                     if self.loading {
                                         html! {
