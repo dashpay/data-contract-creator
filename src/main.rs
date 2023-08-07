@@ -424,14 +424,12 @@ impl Model {
                         
                             <div class="forms-line-checkboxes">
                                 <label class="container-checkbox second-checkbox">{"Require $createdAt:   "}
-                                <input type="checkbox" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                                <span class="checkmark"></span>
+                                    <input type="checkbox" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                    <span class="checkmark"></span>
                                 </label>
-                            </div>
-                            <div class="forms-line-checkboxes">
-                            <label class="container-checkbox second-checkbox">{"Require $updatedAt:   "}
-                                <input type="checkbox" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                                <span class="checkmark"></span>
+                                <label class="container-checkbox second-checkbox">{"Require $updatedAt:   "}
+                                    <input type="checkbox" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                    <span class="checkmark"></span>
                                 </label>
                             </div>                        
                     
@@ -1888,65 +1886,67 @@ impl Component for Model {
         html! {
             <main class="home">
                 <body>
+                    <div class="top-section_ai">
+                        <img class="logo_ai" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="100" height="50" />
+                        <h1 class="header_ai">{"Data Contract Creator"}</h1>
+                    </div>
                     <div class="container_ai">
-                        <div class="top-section_ai">
-                            <img class="logo_ai" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
-                            <h1 class="header_ai">{"Data Contract Creator"}</h1>
-                        </div>
                         <div class="content-container_ai">
                             <div class="input-container_ai">
-                                { if !self.key_valid { html! {
-                                    <div class="form-container_ai">
-                                    <h2>{"Use AI to create the data contract"}</h2>
-                                    <p>{"Describe your project with text and we will generate a contract for you"}</p>  
-                                    <label>{"Open AI key"}</label>
-                                    <div class="input-button-container_ai">
-                                            <input type="password"
-                                                value={self.user_key.clone()}
-                                                oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                                            <button onclick={ctx.link().callback(|_| Msg::SubmitKey)}>{"Submit"}</button>
-                                    </div> 
-                                    </div>   
-                                  }} else { html! {
-                                    <form onsubmit={onsubmit} class="form-container_ai">
-                                        
-                                        <label>{"Project description"}</label>
-                                            <input
-                                                placeholder={
-                                                    if self.schema.is_empty() {
-                                                        "Describe your app here"
-                                                    } else {
-                                                        "Describe any adjustments here"
-                                                    }
-                                                }
-                                                value={self.prompt.clone()}
-                                                oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
-                                            />
-                                           
-                                            <button type="submit">{"Generate"}</button>
-                                    </form>
-                                  }}
-                                }
-                                {
-                                    if self.loading {
-                                        html! {
-                                            <div class="loader_ai"></div>
-                                        }
-                                    } else {
-                                        html! {}
+                                <div class="form-container_ai">
+                                    <h2>{"Use AI to create a data contract"}</h2>
+                                    <p>{"Describe your dapp with text and AI will generate a contract for you"}</p>
+                                    { if !self.key_valid { html! {
+                                            <>
+                                                <label>{"Open AI key"}</label>
+                                                <div class="input-button-container_ai">
+                                                <input type="password"
+                                                    value={self.user_key.clone()}
+                                                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                                                <button onclick={ctx.link().callback(|_| Msg::SubmitKey)}>{"Submit"}</button>
+                                                </div>
+                                            </>
+                                        }} else { html! {
+                                            <form onsubmit={onsubmit}>
+                                                <label>{"Project description"}</label>
+                                                    <div class="input-button-container_ai">
+                                                        <input
+                                                            placeholder={
+                                                                if self.schema.is_empty() {
+                                                                    "Describe your app here"
+                                                                } else {
+                                                                    "Describe any adjustments here"
+                                                                }
+                                                            }
+                                                            value={self.prompt.clone()}
+                                                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                                                        />
+                                                    <button type="submit">{"Generate"}</button>
+                                                </div>
+                                            </form>
+                                        }}
                                     }
-                                }                                 
-                            </div>
-                            <div class="error-text_ai">
-                                {
-                                    if self.error_messages_ai.clone() != self.error_messages.clone() {
-                                        self.error_messages_ai.clone()
-                                    } else {
-                                        vec!["".to_string()]
-                                    }
-                                }
+                                </div>
                             </div>
                         </div>
+                        {
+                            if self.loading {
+                                html! {
+                                    <div class="loader_ai"></div>
+                                }
+                            } else {
+                                html! {}
+                            }
+                        }
+                        <div class="error-text_ai">
+                            {
+                                if self.error_messages_ai.clone() != self.error_messages.clone() {
+                                    self.error_messages_ai.clone()
+                                } else {
+                                    vec!["".to_string()]
+                                }
+                            }
+                        </div>    
                     </div>
                     <div class="columns">
                     <div class="column-left">

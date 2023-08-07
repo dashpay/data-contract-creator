@@ -20,6 +20,8 @@ main {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   margin: 0;
   padding: 20px;
@@ -43,7 +45,7 @@ p{
 }
 label{
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
 }
 input{
   margin-top: 10px;
@@ -63,6 +65,7 @@ input{
 }
 .forms-line-checkboxes {
   display: flex;
+  flex-direction: column;
   margin: 10px 0;
   justify-content: space-between;
 }
@@ -148,6 +151,7 @@ p.prop-text{
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  height: 30px;
 }
 .column-text img {
   padding-right: 10px;
@@ -336,6 +340,7 @@ button.button.property {
   background: rgba(0, 141, 228, 0.08);
   color: #008de4;
   font-weight: 400;
+  margin-bottom: 30px;
 }
 button.button.property span {
   color: #fff;
@@ -473,10 +478,12 @@ span.clear {
 .columns{
   display: flex;
   justify-content: center;
+  align-self: center;
+  width: 90%;
 }
 .column-left, .column-right {
   width: 100%;
-  max-width: 540px;
+  //max-width: 540px;
 }
 .column-left{
   margin-right: 4%;
@@ -577,39 +584,45 @@ $body-color: #008de4;
 
 @import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
 
+.top-section_ai {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logo_ai {
+  width: 150px;
+  height: 75px;
+}
+
+.header_ai {
+  text-align: center;
+  margin: 40px;
+}
+
+
 .container_ai {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-evenly;
-  padding-top: 50px;
-  width: 100%;
+  width: 90%;
   //max-width: 1200px;
-
-  .top-section_ai {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-
-  .logo_ai {
-    width: 200px;
-    height: 100px;
-  }
-
-  .header_ai {
-    text-align: center;
-    margin-top: 0px;
-  }
+  background: #fff;
+  flex-grow: 1;
+  border-radius: 30px;
+  padding: 10px 0;
+  align-self: center;
+  margin-bottom: 50px;
 
   .content-container_ai {
     display: flex;
     align-items: center;
-    flex-grow: 1;
     width: 100%;
     max-width: 1153px;
     background: #fff;
+    flex-grow: 1;
     border-radius: 30px;
     padding: 40px 0;
     justify-content: center;
@@ -626,6 +639,7 @@ $body-color: #008de4;
   }
   .input-container_ai h2, .input-container_ai p{
     text-align: center;
+    margin-bottom: 8px;
   }
   .input-container_ai p{
     margin-bottom: 20px;
@@ -637,6 +651,7 @@ $body-color: #008de4;
     border: 1px solid rgba(29, 29, 31, 0.1);
     padding: 4px;
     border-radius: 8px;
+    margin-top: 10px;
   }
   .flex-ai {
     display: flex;
@@ -648,7 +663,8 @@ $body-color: #008de4;
     width: 60px;
     height: 60px;
     animation: spin 2s linear infinite;
-    margin-top: 70px;
+    margin-top: 10px;
+    margin-bottom: 30px;
   }
   
   @keyframes spin {
@@ -671,6 +687,7 @@ $body-color: #008de4;
   .error-text_ai {
     color: red;
     text-align: center;
+    margin-bottom: 30px;
   }
 
   input {
