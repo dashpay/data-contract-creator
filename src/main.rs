@@ -406,9 +406,12 @@ impl Model {
         html! {
             <>
             <div class="input-container">
-                <div>
-                    <h2>{format!("Document type {}", index+1)}</h2>
-                    <h3>{"Name"}</h3>
+                <div class="doc-section">
+                <div class="doc-block">
+                <h2>{format!("Document type {}", index+1)}</h2>
+                <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
+                </div>
+                    <label>{"Name"}</label>
                     <input type="text" placeholder="Name" value={self.document_types[index].name.clone()} onblur={ctx.link().callback(move |e: FocusEvent| Msg::UpdateName(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
                 </div>
                 <div>
@@ -420,14 +423,16 @@ impl Model {
                             
                         
                             <div class="forms-line-checkboxes">
-                                <label>{"Require $createdAt:   "}</label>
-                                <input type="checkbox" id="toggle1" class="toggle-input" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                                <label for="toggle1" class="toggle-label"></label>
+                                <label class="container-checkbox second-checkbox">{"Require $createdAt:   "}
+                                <input type="checkbox" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <span class="checkmark"></span>
+                                </label>
                             </div>
                             <div class="forms-line-checkboxes">
-                                <label>{"Require $updatedAt:   "}</label>
-                                <input type="checkbox" id="toggle2" class="toggle-input" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                                <label for="toggle2" class="toggle-label"></label>
+                            <label class="container-checkbox second-checkbox">{"Require $updatedAt:   "}
+                                <input type="checkbox" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <span class="checkmark"></span>
+                                </label>
                             </div>                        
                     
                 </div>
@@ -444,10 +449,6 @@ impl Model {
                 <div>
                     <h3>{"Comment"}</h3>
                     <input type="text2" placeholder="Comment" value={self.document_types[index].comment.clone()} onblur={ctx.link().callback(move |e: FocusEvent| Msg::UpdateComment(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                </div>
-                <br/>
-                <div class="remove-text-button">
-                <button class="button remove-text" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}>{format!("Remove document type {}", index+1)}</button>
                 </div>
             </div>
             <br/>
@@ -468,9 +469,13 @@ impl Model {
         let additional_properties = self.render_additional_properties(&selected_data_type, doc_index, prop_index, ctx);
         html! {
             <>
+            <div class="properties-block">
+                <p>{format!("Property {}", prop_index+1)}</p>
+                <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
+                </div>
                 <div class="forms-line-names">
                     <div class="form-headers">
-                        <label>{format!("Property {} name", prop_index+1)}</label>
+                        <label>{"Name"}</label>
                         <input type="text3" placeholder={format!("Property {} name", prop_index+1)} value={self.document_types[doc_index].properties[prop_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
                     </div>
                     <div class="form-headers">
@@ -485,16 +490,15 @@ impl Model {
                             })}
                         </select>
                     </div>
-                    <div class="form-headers">
+                    <div class="form-headers checkbox-block">
                         <label>{"Required"}</label>
-                        <div class="checkbox-block">
-                            <input type="checkbox" id="toggle" class="toggle-input"  checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                            <label for="toggle" class="toggle-label"></label>
-                        </div>
+                            <label class="container-checkbox">
+                            <input type="checkbox" checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                            <span class="checkmark"></span>
+                            </label>
                     </div>
-                    <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"X"}</button>
                 </div>
-                <p><b>{if selected_data_type != String::from("Object") { "Optional property parameters:" } else {""}}</b></p>
+                <p class="prop-text">{if selected_data_type != String::from("Object") { "Optional property parameters:" } else {""}}</p>
                 <div class="forms-line">
                         {additional_properties}
                         <div class="forms-line">
@@ -515,7 +519,8 @@ impl Model {
         match data_type.as_str() {
             "String" => html! {
                 <>
-                <div class="forms-line">
+                <div class="forms-line number-block">
+                <div class="forms-line min">
                     <label>{"Min length: "}</label>
                     <input type="number" value={property.min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
                         let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
@@ -526,9 +531,8 @@ impl Model {
                         };
                         Msg::UpdateStringPropertyMinLength(doc_index, prop_index, num_value)
                     })} />
-                    
-                </div>
-                <div class="forms-line">
+                    </div>
+                    <div class="forms-line max">
                     <label>{"Max length: "}</label>
                     <input type="number" value={property.max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
                         let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
@@ -539,7 +543,7 @@ impl Model {
                         };
                         Msg::UpdateStringPropertyMaxLength(doc_index, prop_index, num_value)
                     })} />
-                    
+                    </div>
                 </div>
                 <div class="forms-line">
                     <label>{"RE2 pattern: "}</label>
@@ -712,12 +716,14 @@ impl Model {
                                 <option value={String::from(*option)} selected={&String::from(*option)==&selected_data_type}>{String::from(*option)}</option>
                             })}
                         </select>
-                        <input type="checkbox" id="toggle3" class="toggle-input" checked={match &self.document_types[doc_index].properties[prop_index].properties {
+                        <label class="container-checkbox">
+                        <input type="checkbox" checked={match &self.document_types[doc_index].properties[prop_index].properties {
                             Some(properties) => properties.get(recursive_prop_index).map(|property| property.required).unwrap_or(false),
                             None => false,
                         }} onchange={ctx.link().callback(move |e: Event| Msg::UpdateRecPropertyRequired(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                        <label for="toggle3" class="toggle-label"></label>
-                        <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveRecProperty(doc_index, prop_index, recursive_prop_index))}>{"X"}</button>
+                        <span class="checkmark"></span>
+                        </label>
+                        <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveRecProperty(doc_index, prop_index, recursive_prop_index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
                 </div>
                 <p><b>{"Optional property parameters:"}</b></p>
                 <div class="forms-line">
@@ -918,13 +924,15 @@ impl Model {
                  <label>{format!("Index {} name", index_index+1)}</label>
                 <input type="text3" placeholder={format!("Index {} name", index_index+1)} value={self.document_types[doc_index].indices[index_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexName(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
                 </div>
-                <div class="form-headers checkbox">
+                <div class="form-headers checkbox-block">
                 <label>{"Unique"}</label>
-                <input type="checkbox" id="toggle4" class="toggle-input" checked={self.document_types[doc_index].indices[index_index].unique} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexUnique(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                <label for="toggle4" class="toggle-label"></label>
+                <label class="container-checkbox">
+                <input type="checkbox" checked={self.document_types[doc_index].indices[index_index].unique} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexUnique(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                <span class="checkmark"></span>
+                </label>
                 </div>
                 <div class="form-headers">
-                <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveIndex(doc_index, index_index))}>{"X"}</button>
+                <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveIndex(doc_index, index_index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
                 </div>
                 </div>            
 <div class="forms-line">
@@ -951,9 +959,12 @@ impl Model {
             current_sort = sorting_options[1];
         }
         html!(
-            <div class="forms-line">
+            <div class="forms-line number-block index">
+            <div class="forms-line min index">
                 {format!("Property {}: ", prop_index+1)}
                 <input type="text3" value={self.document_types[doc_index].indices[index_index].properties[prop_index].0.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexProperty(doc_index, index_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+            </div>
+            <div class="forms-line max index">    
                 <select value={current_sort} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexSorting(doc_index, index_index, prop_index, match e.target_dyn_into::<HtmlSelectElement>().unwrap().value().as_str() {
                     "Ascending" => String::from("asc"),
                     "Descending" => String::from("desc"),
@@ -963,7 +974,8 @@ impl Model {
                         <option value={String::from(*option)} selected={&String::from(*option)==current_sort}>{String::from(*option)}</option>
                     })}
                 </select>
-</div>        
+</div>    
+</div>    
             )
     }
 
@@ -1885,17 +1897,20 @@ impl Component for Model {
                             <div class="input-container_ai">
                                 { if !self.key_valid { html! {
                                     <div class="form-container_ai">
-                                        <div class="input-button-container_ai">
+                                    <h2>{"Use AI to create the data contract"}</h2>
+                                    <p>{"Describe your project with text and we will generate a contract for you"}</p>  
+                                    <label>{"Open AI key"}</label>
+                                    <div class="input-button-container_ai">
                                             <input type="password"
-                                                placeholder="Paste OpenAI API key here"
                                                 value={self.user_key.clone()}
                                                 oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
                                             <button onclick={ctx.link().callback(|_| Msg::SubmitKey)}>{"Submit"}</button>
-                                        </div>
-                                    </div>
+                                    </div> 
+                                    </div>   
                                   }} else { html! {
                                     <form onsubmit={onsubmit} class="form-container_ai">
-                                        <div class="input-button-container_ai">
+                                        
+                                        <label>{"Project description"}</label>
                                             <input
                                                 placeholder={
                                                     if self.schema.is_empty() {
@@ -1907,8 +1922,8 @@ impl Component for Model {
                                                 value={self.prompt.clone()}
                                                 oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
                                             />
+                                           
                                             <button type="submit">{"Generate"}</button>
-                                        </div>
                                     </form>
                                   }}
                                 }
@@ -1931,11 +1946,14 @@ impl Component for Model {
                                     }
                                 }
                             </div>
-                            <br/><br/>
                         </div>
                     </div>
                     <div class="columns">
                     <div class="column-left">
+                    <div class="column-text">
+                    <img src="https://media.dash.org/wp-content/uploads/icon-left.svg" />
+                    <p>{"Use the left column to build, edit, and submit a data contract."}</p>
+                    </div>
 
                         // show input fields
                         {self.view_document_types(ctx)}
@@ -1951,6 +1969,10 @@ impl Component for Model {
                         </div>
                     </div>
                     <div class="column-right">
+                    <div class="column-text">
+                    <img src="https://media.dash.org/wp-content/uploads/icon-left.svg" />
+                    <p>{"Use the right column to copy the generated data contract to your clipboard or import."}</p>
+                    </div>
                     
                         // format and display json object
                       <div class="input-container">
@@ -1984,10 +2006,8 @@ impl Component for Model {
                             </b></p>
                             <div class="button-block">
                               <button class="button-clear" onclick={ctx.link().callback(|_| Msg::Clear)}><span class="clear">{"X"}</span>{"Clear"}</button>
-                              <button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}>{"Import"}</button>
+                              <button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}><img src="https://media.dash.org/wp-content/uploads/arrow.down_.square.fill_.svg"/>{"Import"}</button>
                             </div>
-                        
-                        <br/>
                         <div class="prompt-history">
                             <h3>{if !self.history.is_empty() {"Prompt history:"} else {""}}</h3>
                             {for self.history.iter().map(|input| html! {
@@ -1997,7 +2017,7 @@ impl Component for Model {
                         </div>
                     </div>
                 </div>
-            </body>
+                </body>
         </main>
         }
     }
