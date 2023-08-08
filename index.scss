@@ -33,7 +33,7 @@ body {
 pre {
   white-space: pre-wrap;
 }
-label, p, h1, h2, h3, h4, h5, h6{
+label, p, h1, h2, h3, h5, h6{
   color: #1D1D1F;
 }
 h2 {
@@ -41,6 +41,9 @@ h2 {
 }
 h3 {
   margin: 30px 0 8px;
+}
+h4 {
+  color: #878a8d;
 }
 p{
   margin: 0;
@@ -100,14 +103,15 @@ input{
   background: #F5F6F7;
   align-items: center;
   padding: 0 10px;
-  margin: 10px 0;
+  margin: 30px 0;
   border-radius: 8px;
   font-weight: 600;
 } 
 p.prop-text{
-  margin: 10px 0 30px;
+  margin: 10px 0 20px;
   color: #75808A;
   font-size: 16px;
+  font-weight: 400;
 }
 .form-headers.checkbox-block{
   display: flex;

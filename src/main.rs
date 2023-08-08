@@ -506,7 +506,7 @@ impl Model {
                             </label>
                     </div>
                 </div>
-                <p class="prop-text">{if selected_data_type != String::from("Object") { "Optional property parameters" } else {""}}</p>
+                <h4>{if selected_data_type != String::from("Object") { format!("Property {} additional fields", prop_index+1) } else {"".to_string()}}</h4>
                 <div class="forms-line">
                         {additional_properties}
                         <div class="forms-line">
