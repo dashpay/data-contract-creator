@@ -36,15 +36,18 @@ pre {
 label, p, h1, h2, h3, h4, h5, h6{
   color: #1D1D1F;
 }
-h2,h3{
-  margin:0;
+h2 {
+  margin: 10px 0;
+}
+h3 {
+  margin: 30px 0 8px;
 }
 p{
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 label{
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
 }
 input{
@@ -57,12 +60,13 @@ input{
   align-items: center;
   gap: 10px;
   width: 100%;
+  margin-bottom: 30px;
 }
 .forms-line-names input, .forms-line-names select, .forms-line-names label {
   margin: 5px 0;
 }
 .forms-line-names input[type="text3"]{
-  width: 88%;
+  width: 92.5%;
 }
 .forms-line-checkboxes {
   display: flex;
@@ -76,6 +80,9 @@ input{
 }
 .form-headers {
   width: 100%;
+}
+.form-headers-type {
+  width: 30%;
 }
 .form-headers.checkbox {
   display: flex;
@@ -92,14 +99,15 @@ input{
   justify-content: space-between;
   background: #F5F6F7;
   align-items: center;
-  padding: 0 15px;
-  margin: 30px 0 20px;
+  padding: 0 10px;
+  margin: 10px 0;
   border-radius: 8px;
   font-weight: 600;
 } 
 p.prop-text{
-  margin: 10px 0;
+  margin: 10px 0 30px;
   color: #75808A;
+  font-size: 16px;
 }
 .form-headers.checkbox-block{
   display: flex;
@@ -130,7 +138,7 @@ p.prop-text{
 
 .container-checkbox.second-checkbox {
   padding-left: 25px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .container-checkbox.second-checkbox input {
   height: 8px;
@@ -142,9 +150,9 @@ p.prop-text{
 }
 .container-checkbox.second-checkbox .checkmark:after {
   left: 5px;
-  top: 1px;
-  width: 4px;
-  height: 9px;
+  top: 2px;
+  width: 3px;
+  height: 7px;
   border-width: 0 2px 2px 0;
 }
 .form-line {
@@ -174,6 +182,7 @@ p.prop-text{
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 10px 0 0;
 }
 .doc-section {
   margin: 0 0 20px;
@@ -384,13 +393,13 @@ button.button.remove-text {
 .container-checkbox input {
   opacity: 0;
   cursor: pointer;
-  height: 41px;
+  height: 37px;
 }
 
 .container-checkbox .checkmark {
   position: absolute;
-  top: 12px;
-  left: 0;
+  top: 17px;
+  left: 4px;
   height: 20px;
   width: 20px;
   border-radius: 5px;
@@ -416,10 +425,10 @@ button.button.remove-text {
 }
 
 .container-checkbox .checkmark:after {
-  left: 8px;
-  top: 1px;
-  width: 4px;
-  height: 14px;
+  left: 7px;
+  top: 3px;
+  width: 3px;
+  height: 10px;
   border: solid white;
   border-width: 0 2px 2px 0;
   -webkit-transform: rotate(45deg);
@@ -512,7 +521,7 @@ span.clear {
 }
 
 .logo {
-  margin-top: 30px;
+  margin-top: 40px;
 }
 
 .button-container {
@@ -534,15 +543,18 @@ span.clear {
 
 .textarea-whitespace {
   width: 95%;
-  height: 120px;
+  height: 150px;
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
 }
 
 .textarea-no-whitespace {
-  width: 99%;
+  width: 95%;
   height: 100px;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .text-area-subtext {
@@ -568,6 +580,7 @@ span.clear {
 
 .error-text {
   color: red;
+  font-size: 14px;
 }
 
 .passed-text {
@@ -605,6 +618,7 @@ $body-color: #008de4;
 .logo_ai {
   width: 150px;
   height: 75px;
+  margin-top: 40px;
 }
 
 .header_ai {
@@ -623,7 +637,7 @@ $body-color: #008de4;
   background: #fff;
   flex-grow: 1;
   border-radius: 30px;
-  padding: 10px 0;
+  padding: 40px 0;
   align-self: center;
   margin-bottom: 50px;
 
@@ -635,7 +649,6 @@ $body-color: #008de4;
     background: #fff;
     flex-grow: 1;
     border-radius: 30px;
-    padding: 40px 0;
     justify-content: center;
   }
   .input-container_ai{
@@ -666,7 +679,7 @@ $body-color: #008de4;
   }
   .flex-ai {
     display: flex;
-}
+  }
   .loader_ai {
     border: 8px solid #f3f3f3; /* Light grey */
     border-top: 8px solid $body-color; /* Blue */
@@ -674,8 +687,7 @@ $body-color: #008de4;
     width: 60px;
     height: 60px;
     animation: spin 2s linear infinite;
-    margin-top: 10px;
-    margin-bottom: 30px;
+    margin-top: 50px;
   }
   
   @keyframes spin {
@@ -698,7 +710,8 @@ $body-color: #008de4;
   .error-text_ai {
     color: red;
     text-align: center;
-    margin-bottom: 30px;
+    margin: 10px;
+    font-size: 14px;
   }
 
   input {

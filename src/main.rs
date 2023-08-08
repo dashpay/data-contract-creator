@@ -448,7 +448,11 @@ impl Model {
                     </div>
                     <div>
                         <h3>{"Comment"}</h3>
-                        <input type="text2" placeholder="Comment" value={self.document_types[index].comment.clone()} onblur={ctx.link().callback(move |e: FocusEvent| Msg::UpdateComment(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                        <input type="text2" 
+                            //placeholder="Comment" 
+                            value={self.document_types[index].comment.clone()} 
+                            onblur={ctx.link().callback(move |e: FocusEvent| Msg::UpdateComment(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                        />
                     </div>
                 </div>
                 <br/>
@@ -482,7 +486,7 @@ impl Model {
                             oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
                         />
                     </div>
-                    <div class="form-headers">
+                    <div class="form-headers-type">
                         <label>{"Type"}</label>
                         <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| {
                             let selected_data_type = e.target_dyn_into::<HtmlSelectElement>().unwrap().value();
@@ -702,10 +706,14 @@ impl Model {
                 </div>
                 <div class="forms-line">
                     
-                        <input type="text3" placeholder={format!("Inner property {} name", recursive_prop_index+1)} value={match &self.document_types[doc_index].properties[prop_index].properties {
-                            Some(properties) => properties.get(recursive_prop_index).map(|property| property.name.clone()).unwrap_or_default(),
-                            None => String::new(),
-                        }} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyName(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                        <input type="text3" 
+                            //placeholder={format!("Inner property {} name", recursive_prop_index+1)} 
+                            value={match &self.document_types[doc_index].properties[prop_index].properties {
+                                Some(properties) => properties.get(recursive_prop_index).map(|property| property.name.clone()).unwrap_or_default(),
+                                None => String::new(),
+                            }} 
+                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyName(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                        />
                   
                         <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| Msg::UpdateRecPropertyType(doc_index, prop_index, recursive_prop_index, match e.target_dyn_into::<HtmlSelectElement>().unwrap().value().as_str() {
                             "String" => String::from("String"),
@@ -926,7 +934,11 @@ impl Model {
 </div>            <div class="forms-line-names">
                  <div class="form-headers"> 
                  <label>{format!("Index {} name", index_index+1)}</label>
-                <input type="text3" placeholder={format!("Index {} name", index_index+1)} value={self.document_types[doc_index].indices[index_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexName(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                <input type="text3" 
+                    //placeholder={format!("Index {} name", index_index+1)} 
+                    value={self.document_types[doc_index].indices[index_index].name.clone()} 
+                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexName(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                />
                 </div>
                 <div class="form-headers checkbox-block">
                 <label>{"Unique"}</label>
@@ -1899,43 +1911,41 @@ impl Component for Model {
                     <div class="container_ai">
                         <div class="content-container_ai">
                             <div class="input-container_ai">
-                                <div class="form-container_ai">
-                                    <h2>{"Use AI to create a data contract"}</h2>
-                                    <p>{"Describe your project with text and AI will generate a contract for you (optional)"}</p>
-                                    { if !self.key_valid { html! {
-                                            <>
-                                                <label class="padded-label">{"  OpenAI API key"}</label>
-                                                <div class="input-button-container_ai">
-                                                <input type="password"
-                                                    //placeholder={"First, submit an OpenAI API key"}
-                                                    value={self.user_key.clone()}
-                                                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                                                <button onclick={ctx.link().callback(|_| Msg::SubmitKey)}><b>{"Submit"}</b></button>
-                                                </div>
-                                            </>
-                                        }} else { html! {
-                                            <form onsubmit={onsubmit}>
-                                                <label class="padded-label">{"  Project description"}</label>
-                                                    <div class="input-button-container_ai">
-                                                        <input
-                                                            placeholder={
-                                                                if self.schema.is_empty() {
-                                                                    "Describe your project here"
-                                                                } else {
-                                                                    "Describe any adjustments here"
-                                                                }
-                                                            }
-                                                            value={self.prompt.clone()}
-                                                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
-                                                        />
-                                                    <button type="submit">{"Generate"}</button>
-                                                </div>
-                                            </form>
-                                        }}
-                                    }
-                                </div>
+                                <h2>{"Use AI to create a data contract"}</h2>
+                                <p>{"Describe your project with text and AI will generate a contract for you (optional)"}</p>
+                                { if !self.key_valid { html! {
+                                        <>
+                                            <label class="padded-label">{"  OpenAI API key"}</label>
+                                            <div class="input-button-container_ai">
+                                            <input type="password"
+                                                //placeholder={"First, submit an OpenAI API key"}
+                                                value={self.user_key.clone()}
+                                                oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                                            <button onclick={ctx.link().callback(|_| Msg::SubmitKey)}><b>{"Submit"}</b></button>
+                                            </div>
+                                        </>
+                                    }} else { html! {
+                                        <form onsubmit={onsubmit}>
+                                            <label class="padded-label">{"  Project description"}</label>
+                                            <div class="input-button-container_ai">
+                                                <input
+                                                    placeholder={
+                                                        if self.schema.is_empty() {
+                                                            "Describe your project here"
+                                                        } else {
+                                                            "Describe any adjustments here"
+                                                        }
+                                                    }
+                                                    value={self.prompt.clone()}
+                                                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                                                />
+                                                <button type="submit">{"Generate"}</button>
+                                            </div>
+                                        </form>
+                                    }}
+                                }
                             </div>
-                        </div>
+                        </div> 
                         {
                             if self.loading {
                                 html! {
@@ -1953,7 +1963,7 @@ impl Component for Model {
                                     vec!["".to_string()]
                                 }
                             }
-                        </div>    
+                        </div>
                     </div>
                     <div class="columns">
                     <div class="column-left">
