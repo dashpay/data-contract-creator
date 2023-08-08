@@ -54,11 +54,12 @@ input{
 
 .forms-line-names {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 .forms-line-names input, .forms-line-names select, .forms-line-names label {
-  margin:5px 0;
+  margin: 5px 0;
 }
 .forms-line-names input[type="text3"]{
   width: 88%;
@@ -67,11 +68,14 @@ input{
   display: flex;
   flex-direction: column;
   margin: 10px 0;
-  justify-content: space-between;
 }
 .button-block {
   display: flex;
   justify-content: space-between;
+  margin-top: 20px;
+}
+.form-headers {
+  width: 100%;
 }
 .form-headers.checkbox {
   display: flex;
@@ -89,7 +93,7 @@ input{
   background: #F5F6F7;
   align-items: center;
   padding: 0 15px;
-  margin: 10px 0 20px;
+  margin: 30px 0 20px;
   border-radius: 8px;
   font-weight: 600;
 } 
@@ -110,17 +114,18 @@ p.prop-text{
 }
 .forms-line.number-block{
   display: flex;
+  width: 100%;
 }
 
 .forms-line.number-block input{
-  width: 100%;
-  max-width: 190px;
+  width: 90%;
 }
 .forms-line.min, .forms-line.max{
   margin: 0;
+  width: 100%;
 }
 .forms-line.min{
-  margin-right: 30px;
+  margin-right: 10px;
 }
 
 .container-checkbox.second-checkbox {
@@ -144,17 +149,22 @@ p.prop-text{
 }
 .form-line {
   margin: 20px 0 30px;
+  width: 100%;
 }
 .column-text {
   margin: 20px 0;
   padding: 10px 40px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   height: 30px;
 }
 .column-text img {
   padding-right: 10px;
+}
+.column-text img.rotate-180 {
+  transform: rotate(180deg);
+  padding-left: 10px;
 }
 .column-text p{
   margin: 0;
@@ -199,7 +209,7 @@ input[type="text2"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  margin:10px 0;
+  margin: 5px 0;
   width: 95%;
   &:focus {
     outline: none;
@@ -214,7 +224,7 @@ input[type="text3"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  margin:10px 0;
+  margin: 5px 0;
   width: 95%;
   &:focus {
     outline: none;
@@ -229,7 +239,7 @@ input[type="text4"] {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
-  margin:10px 0;
+  margin: 5px 0;
   width: 95%;
   &:focus {
     outline: none;
@@ -241,7 +251,7 @@ input[type="text4"] {
 }
 
 input[type="checkbox"] {
-  margin:5px 0;
+  margin: 5px 0;
 }
 
 input[type="number"] {
@@ -292,7 +302,7 @@ select {
   border-radius: 5px;
   margin-top: 2px;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 400;
   margin-bottom: 2px;
   color: #008de4;
   &:hover {
@@ -312,7 +322,7 @@ select {
   background-color: $primary-color;
   color: #fff;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .button-import {
@@ -324,7 +334,7 @@ select {
   margin-top: 2px;
   margin-bottom: 2px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   display: flex;
   align-items: center;
   &:hover {
@@ -336,11 +346,11 @@ select {
 }
 button.button.property {
   width: 100%;
-  font-size: 17px;
+  font-size: 15px;
   background: rgba(0, 141, 228, 0.08);
   color: #008de4;
   font-weight: 400;
-  margin-bottom: 30px;
+  //margin-bottom: 7px;
 }
 button.button.property span {
   color: #fff;
@@ -418,8 +428,8 @@ button.button.remove-text {
 }
 
 .checkbox-block{
-  margin-top: 5px;
-  position: relative;
+  //margin-top: 5px;
+  //position: relative;
   width: 75px;
 }
 .button-clear {
@@ -429,15 +439,16 @@ button.button.remove-text {
   width: 80px;
   color: #2196F3;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   &:hover {
     cursor: pointer;
   }
 }
 span.clear {
+  vertical-align: 1px;
   background: #2196F3;
   color: #fff;
-  font-weight: 600;
+  font-weight: 550;
   font-size: 11px;
   margin-right: 7px;
   border-radius: 50%;
@@ -704,7 +715,7 @@ $body-color: #008de4;
   button {
     padding: 5px 20px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     height: 30px;
     background-color: $body-color;
     color: #fff;
@@ -728,5 +739,6 @@ $body-color: #008de4;
   }
 }
 
-
-
+.padded-label {
+  padding-left: 3px;
+}
