@@ -6,7 +6,7 @@
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serde::{Serialize, Deserialize};
-use yew::{prelude::*, html, Component, Html, Event, InputEvent, FocusEvent, TargetCast};
+use yew::{prelude::*, html, Component, Html, Event, InputEvent, TargetCast};
 use serde_json::{json, Map, Value};
 use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
 use wasm_bindgen::prelude::*;
@@ -405,52 +405,61 @@ impl Model {
     fn view_document_type(&self, index: usize, ctx: &yew::Context<Self>) -> Html {
         html! {
             <>
-            <div class="input-container">
-                <div>
-                    <h2>{format!("Document type {}", index+1)}</h2>
-                    <h3>{"Name"}</h3>
-                    <input type="text" placeholder="Name" value={self.document_types[index].name.clone()} onblur={ctx.link().callback(move |e: FocusEvent| Msg::UpdateName(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                </div>
-                <div>
-                <div class="form-line">
-                    <h3>{"Properties"}</h3>
+                <div class="input-container">
+                    <div class="doc-section">
+                        <div class="doc-block">
+                            <h2>
+                                if !self.document_types[index].name.is_empty() {
+                                    {format!("\"{}\"", self.document_types[index].name)}
+                                } else {{format!("Document Type {}", index+1)}}
+                            </h2>
+                            <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
+                        </div>
+                        <label>{"Name"}</label>
+                        <input type="text" 
+                            //placeholder="Name" 
+                            value={self.document_types[index].name.clone()} 
+                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateName(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                        />
+                    </div>
+                    <div>
+                        <div class="form-line">
+                            <h3>{"Properties"}</h3>
                             {for (0..self.document_types[index].properties.len()).map(|i| self.view_property(index, i, ctx))}
-                            <div class="add-index"><button class="button property" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}><span class="plus">{"+"}</span>{"Add property"}</button>
-                   </div></div>
-                            
-                        
-                            <div class="forms-line-checkboxes">
-                                <label>{"Require $createdAt:   "}</label>
-                                <input type="checkbox" id="toggle1" class="toggle-input" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                                <label for="toggle1" class="toggle-label"></label>
+                            <div class="add-index">
+                                <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddProperty(index))}><span class="plus">{"+"}</span>{"Add property"}</button>
                             </div>
-                            <div class="forms-line-checkboxes">
-                                <label>{"Require $updatedAt:   "}</label>
-                                <input type="checkbox" id="toggle2" class="toggle-input" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                                <label for="toggle2" class="toggle-label"></label>
-                            </div>                        
-                    
-                </div>
-                <div>
-                    <h3>{"Indices"}</h3>
-                    
-                        
-                            {for (0..self.document_types[index].indices.len()).map(|i| self.view_index(index, i, ctx))}
-                            <div class="forms-line"><div class="add-index">
+                        </div>
+                        <div class="forms-line-checkboxes">
+                            <label class="container-checkbox second-checkbox">{"Require $createdAt   "}
+                                <input type="checkbox" checked={self.document_types[index].created_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 0, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="container-checkbox second-checkbox">{"Require $updatedAt   "}
+                                <input type="checkbox" checked={self.document_types[index].updated_at_required} onchange={ctx.link().callback(move |e: Event| Msg::UpdateSystemPropertiesRequired(index, 1, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>{"Indices"}</h3>
+                        {for (0..self.document_types[index].indices.len()).map(|i| self.view_index(index, i, ctx))}
+                        <div class="forms-line">
+                            <div class="add-index">
                                 <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddIndex(index))}><span class="plus">{"+"}</span>{"Add index"}</button>
-                </div></div>                        
-                    
-                </div>
-                <div>
-                    <h3>{"Comment"}</h3>
-                    <input type="text2" placeholder="Comment" value={self.document_types[index].comment.clone()} onblur={ctx.link().callback(move |e: FocusEvent| Msg::UpdateComment(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                            </div>
+                        </div>                        
+                    </div>
+                    <div>
+                        <h3>{"Comment"}</h3>
+                        <input type="text2" 
+                            //placeholder="Comment" 
+                            value={self.document_types[index].comment.clone()} 
+                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateComment(index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                        />
+                    </div>
                 </div>
                 <br/>
-                <div class="remove-text-button">
-                <button class="button remove-text" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}>{format!("Remove document type {}", index+1)}</button>
-                </div>
-            </div>
-            <br/>
             </>
         }
     }
@@ -468,12 +477,24 @@ impl Model {
         let additional_properties = self.render_additional_properties(&selected_data_type, doc_index, prop_index, ctx);
         html! {
             <>
+                <div class="properties-block">
+                    <p>
+                        if !self.document_types[doc_index].properties[prop_index].name.is_empty() {
+                            {format!("\"{}\"", self.document_types[doc_index].properties[prop_index].name)}
+                        } else {{format!("Property {}", prop_index+1)}}
+                    </p>
+                    <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
+                </div>
                 <div class="forms-line-names">
                     <div class="form-headers">
-                        <label>{format!("Property {} name", prop_index+1)}</label>
-                        <input type="text3" placeholder={format!("Property {} name", prop_index+1)} value={self.document_types[doc_index].properties[prop_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                        <label>{"Name"}</label>
+                        <input type="text3" 
+                            //placeholder={format!("Property {} name", prop_index+1)} 
+                            value={self.document_types[doc_index].properties[prop_index].name.clone()} 
+                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyName(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                        />
                     </div>
-                    <div class="form-headers">
+                    <div class="form-headers-type">
                         <label>{"Type"}</label>
                         <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| {
                             let selected_data_type = e.target_dyn_into::<HtmlSelectElement>().unwrap().value();
@@ -485,28 +506,34 @@ impl Model {
                             })}
                         </select>
                     </div>
-                    <div class="form-headers">
+                    <div class="form-headers checkbox-block">
                         <label>{"Required"}</label>
-                        <div class="checkbox-block">
-                            <input type="checkbox" id="toggle" class="toggle-input"  checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                            <label for="toggle" class="toggle-label"></label>
-                        </div>
+                            <label class="container-checkbox">
+                            <input type="checkbox" checked={self.document_types[doc_index].properties[prop_index].required} onchange={ctx.link().callback(move |e: Event| Msg::UpdatePropertyRequired(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                            <span class="checkmark"></span>
+                            </label>
                     </div>
-                    <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveProperty(doc_index, prop_index))}>{"X"}</button>
                 </div>
-                <p><b>{if selected_data_type != String::from("Object") { "Optional property parameters:" } else {""}}</b></p>
+                <h4>
+                    {if selected_data_type != String::from("Object") {
+                        if !self.document_types[doc_index].properties[prop_index].name.is_empty() {
+                            {format!("\"{}\" property optional fields", self.document_types[doc_index].properties[prop_index].name)}
+                        } else {{format!("Property {} optional fields", prop_index+1)}}
+                    } else {"".to_string()}}
+                </h4>
                 <div class="forms-line">
-                        {additional_properties}
-                        <div class="forms-line">
-                            <label>{"Description: "}</label>
-                            <input type="text3" value={self.document_types[doc_index].properties[prop_index].description.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyDescription(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-            </div>                        <div class="forms-line">
-                            <label>{"Comment: "}</label>
-                            <input type="text3" value={self.document_types[doc_index].properties[prop_index].comment.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyComment(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-            </div>                        <p></p>
-                    
-    </div>            
-    </>
+                    {additional_properties}
+                    <div class="forms-line">
+                        <label>{"Description "}</label>
+                        <input type="text3" value={self.document_types[doc_index].properties[prop_index].description.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyDescription(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                    </div>                        
+                    <div class="forms-line">
+                        <label>{"Comment "}</label>
+                        <input type="text3" value={self.document_types[doc_index].properties[prop_index].comment.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePropertyComment(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                    </div>
+                    <p></p>
+                </div>            
+            </>
         }
     }
 
@@ -515,144 +542,158 @@ impl Model {
         match data_type.as_str() {
             "String" => html! {
                 <>
-                <div class="forms-line">
-                    <label>{"Min length: "}</label>
-                    <input type="number" value={property.min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<u32>().unwrap_or_default())
-                        };
-                        Msg::UpdateStringPropertyMinLength(doc_index, prop_index, num_value)
-                    })} />
-                    
-                </div>
-                <div class="forms-line">
-                    <label>{"Max length: "}</label>
-                    <input type="number" value={property.max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<u32>().unwrap_or_default())
-                        };
-                        Msg::UpdateStringPropertyMaxLength(doc_index, prop_index, num_value)
-                    })} />
-                    
-                </div>
-                <div class="forms-line">
-                    <label>{"RE2 pattern: "}</label>
-                    <input type="text3" value={property.pattern.clone().unwrap_or_default()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringPropertyPattern(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                </div>
-                <div class="forms-line">
-                    <label>{"Format: "}</label>
-                    <input type="text3" value={property.format.clone().unwrap_or_default()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringPropertyFormat(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                </div>
+                    <div class="forms-line number-block">
+                        <div class="forms-line min">
+                            <label>{"Min length "}</label>
+                            <input type="number" value={property.min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<u32>().unwrap_or_default())
+                                };
+                                Msg::UpdateStringPropertyMinLength(doc_index, prop_index, num_value)
+                                })} 
+                            />
+                        </div>
+                        <div class="forms-line max">
+                            <label>{"Max length "}</label>
+                            <input type="number" value={property.max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<u32>().unwrap_or_default())
+                                };
+                                Msg::UpdateStringPropertyMaxLength(doc_index, prop_index, num_value)
+                                })} 
+                            />
+                        </div>
+                    </div>
+                    <div class="forms-line">
+                        <label>{"RE2 pattern "}</label>
+                        <input type="text3" value={property.pattern.clone().unwrap_or_default()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringPropertyPattern(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                    </div>
+                    <div class="forms-line">
+                        <label>{"Format "}</label>
+                        <input type="text3" value={property.format.clone().unwrap_or_default()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringPropertyFormat(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                    </div>
                 </>
             },
             "Integer" => html! {
                 <>
-                <div class="forms-line">
-                    <label>{"Minimum: "}</label>
-                    <input type="number" value={property.minimum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<i32>().unwrap_or_default())
-                        };
-                        Msg::UpdateIntegerPropertyMinimum(doc_index, prop_index, num_value)
-                    })} />
-                    
-                </div>
-                <div class="forms-line">
-                    <label>{"Maximum: "}</label>
-                    <input type="number" value={property.maximum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<i32>().unwrap_or_default())
-                        };
-                        Msg::UpdateIntegerPropertyMaximum(doc_index, prop_index, num_value)
-                    })} />
-                                  </div>
+                    <div class="forms-line number-block">
+                        <div class="forms-line min">
+                            <label>{"Minimum "}</label>
+                            <input type="number" value={property.minimum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<i32>().unwrap_or_default())
+                                };
+                                Msg::UpdateIntegerPropertyMinimum(doc_index, prop_index, num_value)
+                                })} 
+                            />
+                        </div>
+                        <div class="forms-line max">
+                            <label>{"Maximum "}</label>
+                            <input type="number" value={property.maximum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<i32>().unwrap_or_default())
+                                };
+                                Msg::UpdateIntegerPropertyMaximum(doc_index, prop_index, num_value)
+                                })} 
+                            />
+                        </div>
+                    </div>
                 </>
             },
             "Array" => html! {
                 <>
-                /* <div class="forms-line">
-                    <label>{"Byte array: "}</label>
-                    <input type="checkbox" checked={property.byte_array.unwrap_or(false)} onchange={ctx.link().callback(move |e: Event| Msg::UpdateArrayPropertyByteArray(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-    </div>*/
-                <div class="forms-line">
-                    <label>{"Min items: "}</label>
-                    <input type="number" value={property.min_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<u32>().unwrap_or_default())
-                        };
-                        Msg::UpdateArrayPropertyMinItems(doc_index, prop_index, num_value)
-                    })} />
-                    
-                </div>
-                <div class="forms-line">
-                    <label>{"Max items: "}</label>
-                    <input type="number" value={property.max_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<u32>().unwrap_or_default())
-                        };
-                        Msg::UpdateArrayPropertyMaxItems(doc_index, prop_index, num_value)
-                    })} />
-                   
-                </div>
-                <div class="forms-line">
-                    <label>{"Content media type: "}</label>
-                    <input type="text3" value={property.content_media_type.clone().unwrap_or_default()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayPropertyCMT(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                </div>
+                    <div class="forms-line number-block">
+                        /*<div class="forms-line">
+                            <label>{"Byte array: "}</label>
+                            <input type="checkbox" checked={property.byte_array.unwrap_or(false)} onchange={ctx.link().callback(move |e: Event| Msg::UpdateArrayPropertyByteArray(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                        </div>*/
+                        <div class="forms-line min">
+                            <label>{"Min items "}</label>
+                            <input type="number" value={property.min_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<u32>().unwrap_or_default())
+                                };
+                                Msg::UpdateArrayPropertyMinItems(doc_index, prop_index, num_value)
+                            })} />
+                            
+                        </div>
+                        <div class="forms-line max">
+                            <label>{"Max items "}</label>
+                            <input type="number" value={property.max_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<u32>().unwrap_or_default())
+                                };
+                                Msg::UpdateArrayPropertyMaxItems(doc_index, prop_index, num_value)
+                            })} />
+                        
+                        </div>
+                    </div>
+                    <div class="forms-line">
+                        <label>{"Content media type "}</label>
+                        <input type="text3" value={property.content_media_type.clone().unwrap_or_default()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayPropertyCMT(doc_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                    </div>
                 </>
             },
             "Object" => html! {
                 <>
-                <div class="forms-line">
-                    
-                    {for self.document_types[doc_index].properties[prop_index].properties.as_ref().unwrap_or(&Box::new(Vec::new())).iter().enumerate().map(|(i, _)| self.view_recursive_property(doc_index, prop_index, i, ctx))}
-                    
-                </div>
-                <div class="forms-line">
-                    <button class="button" onclick={ctx.link().callback(move |_| Msg::AddRecProperty(doc_index, prop_index))}>{"Add inner property"}</button>
-                </div>
-                <p><b>{"Optional property parameters:"}</b></p>
-                <div class="forms-line">
-                    <label>{"Min properties: "}</label>
-                    <input type="number" value={property.min_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<u32>().unwrap_or_default())
-                        };
-                        Msg::UpdateObjectPropertyMinProperties(doc_index, prop_index, num_value)
-                    })} />
-                </div>
-                <div class="forms-line">
-                    <label>{"Max properties: "}</label>
-                    <input type="number" value={property.max_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                        let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                        let num_value = if value.is_empty() {
-                            None
-                        } else {
-                            Some(value.parse::<u32>().unwrap_or_default())
-                        };
-                        Msg::UpdateObjectPropertyMaxProperties(doc_index, prop_index, num_value)
-                    })} />
-                </div>
+                    <h4 class="black">{if !self.document_types[doc_index].properties[prop_index].name.is_empty() { format!("\"{}\" inner properties", self.document_types[doc_index].properties[prop_index].name)}
+                        else {format!("Property {} inner properties", prop_index+1)} }
+                    </h4>
+                    <div class="forms-line">
+                        {for self.document_types[doc_index].properties[prop_index].properties.as_ref().unwrap_or(&Box::new(Vec::new())).iter().enumerate().map(|(i, _)| self.view_recursive_property(doc_index, prop_index, i, ctx))}
+                    </div>
+                    <div class="forms-line">
+                        <button class="button" onclick={ctx.link().callback(move |_| Msg::AddRecProperty(doc_index, prop_index))}>{"Add inner property"}</button>
+                    </div>
+                    <h4>
+                    {if !self.document_types[doc_index].properties[prop_index].name.is_empty() {
+                        {format!("\"{}\" property optional fields", self.document_types[doc_index].properties[prop_index].name)}
+                    } else {{format!("Property {} optional fields", prop_index+1)}}}
+                    </h4>
+                    <div class="forms-line number-block">
+                        <div class="forms-line min">
+                            <label>{"Min properties "}</label>
+                            <input type="number" value={property.min_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<u32>().unwrap_or_default())
+                                };
+                                Msg::UpdateObjectPropertyMinProperties(doc_index, prop_index, num_value)
+                            })} />
+                        </div>
+                        <div class="forms-line max">
+                            <label>{"Max properties "}</label>
+                            <input type="number" value={property.max_properties.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                let num_value = if value.is_empty() {
+                                    None
+                                } else {
+                                    Some(value.parse::<u32>().unwrap_or_default())
+                                };
+                                Msg::UpdateObjectPropertyMaxProperties(doc_index, prop_index, num_value)
+                            })} />
+                        </div>
+                    </div>
                 </>
             },
             "Number" => html! {
@@ -686,19 +727,34 @@ impl Model {
     
         html! {
             <>
-                //<><b>{format!("Inner property {}:", recursive_prop_index+1)}</b></><br/><br/>
-                <div class="forms-line">
-                    {format!("Inner property {} name", recursive_prop_index+1)}
-                    {"Type"}
-                    {"Required"}
-                </div>
-                <div class="forms-line">
-                    
-                        <input type="text3" placeholder={format!("Inner property {} name", recursive_prop_index+1)} value={match &self.document_types[doc_index].properties[prop_index].properties {
-                            Some(properties) => properties.get(recursive_prop_index).map(|property| property.name.clone()).unwrap_or_default(),
-                            None => String::new(),
-                        }} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyName(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                  
+                <div class="forms-line-names">
+                    <div class="form-headers">
+                        <label>
+                            <b>
+                                {
+                                    if let Some(properties) = &self.document_types[doc_index].properties[prop_index].properties {
+                                        if !properties[recursive_prop_index].name.is_empty() {
+                                            html! { {format!("\"{}.{}\"", self.document_types[doc_index].properties[prop_index].name, properties[recursive_prop_index].name)} }
+                                        } else {
+                                            html! { format!("\"{}\" inner property {} name", self.document_types[doc_index].properties[prop_index].name, recursive_prop_index + 1) }
+                                        }
+                                    } else {
+                                        html! {}
+                                    }
+                                }
+                            </b>
+                        </label>
+                        <input type="text3" 
+                            //placeholder={format!("Inner property {} name", recursive_prop_index+1)} 
+                            value={match &self.document_types[doc_index].properties[prop_index].properties {
+                                Some(properties) => properties.get(recursive_prop_index).map(|property| property.name.clone()).unwrap_or_default(),
+                                None => String::new(),
+                            }} 
+                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyName(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                        />
+                    </div>
+                    <div class="form-headers-type">
+                        <label>{"Type"}</label>
                         <select value={selected_data_type.clone()} onchange={ctx.link().callback(move |e: Event| Msg::UpdateRecPropertyType(doc_index, prop_index, recursive_prop_index, match e.target_dyn_into::<HtmlSelectElement>().unwrap().value().as_str() {
                             "String" => String::from("String"),
                             "Integer" => String::from("Integer"),
@@ -712,32 +768,57 @@ impl Model {
                                 <option value={String::from(*option)} selected={&String::from(*option)==&selected_data_type}>{String::from(*option)}</option>
                             })}
                         </select>
-                        <input type="checkbox" id="toggle3" class="toggle-input" checked={match &self.document_types[doc_index].properties[prop_index].properties {
-                            Some(properties) => properties.get(recursive_prop_index).map(|property| property.required).unwrap_or(false),
-                            None => false,
-                        }} onchange={ctx.link().callback(move |e: Event| Msg::UpdateRecPropertyRequired(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                        <label for="toggle3" class="toggle-label"></label>
-                        <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveRecProperty(doc_index, prop_index, recursive_prop_index))}>{"X"}</button>
+                    </div>
+                    <div class="form-headers checkbox-block">
+                        <label>{"Required"}</label>
+                        <label class="container-checkbox">
+                            <input type="checkbox" 
+                                checked={match &self.document_types[doc_index].properties[prop_index].properties {
+                                    Some(properties) => properties.get(recursive_prop_index).map(|property| property.required).unwrap_or(false),
+                                    None => false}} 
+                                onchange={ctx.link().callback(move |e: Event| Msg::UpdateRecPropertyRequired(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} 
+                            />
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                    <div class="form-headers-remove">
+                        <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveRecProperty(doc_index, prop_index, recursive_prop_index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
+                    </div>
                 </div>
-                <p><b>{"Optional property parameters:"}</b></p>
+                <h4>
+                    {
+                        if let Some(properties) = &self.document_types[doc_index].properties[prop_index].properties {
+                            if !properties[recursive_prop_index].name.is_empty() {
+                                html! { format!("\"{}.{}\" inner property optional fields", self.document_types[doc_index].properties[prop_index].name, properties[recursive_prop_index].name) }
+                            } else {
+                                html! { format!("\"{}\" inner property {} optional fields", self.document_types[doc_index].properties[prop_index].name, recursive_prop_index + 1) }
+                            }
+                        } else {
+                            html! {}
+                        }
+                    }
+                </h4>
                 <div class="forms-line">
-            
-                            {self.rec_render_additional_properties(&selected_data_type, doc_index, prop_index, recursive_prop_index, ctx)}
-                            
-                                <label>{"Description: "}</label>
-                                <input type="text3" value={if let Some(properties) = &self.document_types.get(doc_index).and_then(|doc| doc.properties.get(prop_index).and_then(|prop| prop.properties.clone())) {
-                                    properties.get(recursive_prop_index).and_then(|prop| prop.description.clone()).unwrap_or_default()
-                                } else {
-                                    "".to_string()
-                                }} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyDescription(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                      <label>{"Comment: "}</label><input type="text3" value={if let Some(properties) = &self.document_types.get(doc_index).and_then(|doc| doc.properties.get(prop_index).and_then(|prop| prop.properties.clone())) {
-                                    properties.get(recursive_prop_index).and_then(|prop| prop.comment.clone()).unwrap_or_default()
-                                } else {
-                                    "".to_string()
-                                }} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyComment(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                            </div>
-                            <p></p>
-    
+                    {self.rec_render_additional_properties(&selected_data_type, doc_index, prop_index, recursive_prop_index, ctx)}
+                    <label>{"Description "}</label>
+                    <input type="text3" 
+                        value={if let Some(properties) = &self.document_types.get(doc_index).and_then(|doc| doc.properties.get(prop_index).and_then(|prop| prop.properties.clone())) {
+                            properties.get(recursive_prop_index).and_then(|prop| prop.description.clone()).unwrap_or_default()
+                            } else { "".to_string() }} 
+                        oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyDescription(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                    />
+                </div>
+                <div class="forms-line">
+                    <label>{"Comment "}</label>
+                    <input type="text3" 
+                        value={if let Some(properties) = &self.document_types.get(doc_index).and_then(|doc| doc.properties.get(prop_index).and_then(|prop| prop.properties.clone())) {
+                            properties.get(recursive_prop_index).and_then(|prop| prop.comment.clone()).unwrap_or_default()
+                            } else {"".to_string()}} 
+                        oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateRecPropertyComment(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                    />
+                </div>
+                <br/><br/>
+                <p></p>
             </>
         }
     }
@@ -752,39 +833,42 @@ impl Model {
                 let format = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.format.clone());
                 html! {
                     <>
-                    <div class="forms-line">
-                        <label>{"Min length: "}</label>
-                        <input type="number" value={min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<u32>().unwrap_or_default())
-                            };
-                            Msg::UpdateStringRecPropertyMinLength(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                        
-                    </div>
-                    <div class="forms-line">
-                        <label>{"Max length: "}</label>
-                        <input type="number" value={max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<u32>().unwrap_or_default())
-                            };
-                            Msg::UpdateStringRecPropertyMaxLength(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                    </div>
-                    <div class="forms-line">
-                        <label>{"RE2 pattern: "}</label>
-                        <input type="text3" value={pattern} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyPattern(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                    </div>
-                    <div class="forms-line">
-                        <label>{"Format: "}</label>
-                        <input type="text3" value={format} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyFormat(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                    </div>
+                        <div class="forms-line number-block">
+                            <div class="forms-line min">
+                                <label>{"Min length "}</label>
+                                <input type="number" value={min_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<u32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateStringRecPropertyMinLength(doc_index, prop_index, recursive_prop_index, num_value)
+                                })} />
+                                
+                            </div>
+                            <div class="forms-line max">
+                                <label>{"Max length "}</label>
+                                <input type="number" value={max_length.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<u32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateStringRecPropertyMaxLength(doc_index, prop_index, recursive_prop_index, num_value)
+                                    })} 
+                                />
+                            </div>
+                        </div>
+                        <div class="forms-line">
+                            <label>{"RE2 pattern "}</label>
+                            <input type="text3" value={pattern} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyPattern(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                        </div>
+                        <div class="forms-line">
+                            <label>{"Format "}</label>
+                            <input type="text3" value={format} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateStringRecPropertyFormat(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                        </div>
                     </>
                 }
             },
@@ -793,30 +877,32 @@ impl Model {
                 let maximum = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.maximum);
                 html! {
                     <>
-                    <div class="forms-line">
-                        <label>{"Minimum: "}</label>
-                        <input type="number" value={minimum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<i32>().unwrap_or_default())
-                            };
-                            Msg::UpdateIntegerRecPropertyMinimum(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                    </div>
-                    <div class="forms-line">
-                        <label>{"Maximum: "}</label>
-                        <input type="number" value={maximum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<i32>().unwrap_or_default())
-                            };
-                            Msg::UpdateIntegerRecPropertyMaximum(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                    </div>
+                        <div class="forms-line number-block">
+                            <div class="forms-line min">
+                                <label>{"Minimum "}</label>
+                                <input type="number" value={minimum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<i32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateIntegerRecPropertyMinimum(doc_index, prop_index, recursive_prop_index, num_value)
+                                })} />
+                            </div>
+                            <div class="forms-line max">
+                                <label>{"Maximum "}</label>
+                                <input type="number" value={maximum.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<i32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateIntegerRecPropertyMaximum(doc_index, prop_index, recursive_prop_index, num_value)
+                                })} />
+                            </div>
+                        </div>
                     </>
                 }
             },
@@ -827,38 +913,40 @@ impl Model {
                 let content_media_type = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.content_media_type.clone());
                 html! {
                     <>
-                    /* <div class="forms-line">
-                        <label>{"Byte array: "}</label>
-                        <input type="checkbox" checked={byte_array.unwrap_or(false)} onchange={ctx.link().callback(move |e: Event| Msg::UpdateArrayRecPropertyByteArray(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-        </div>*/
-                    <div class="forms-line">
-                        <label>{"Min items: "}</label>
-                        <input type="number" value={min_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<u32>().unwrap_or_default())
-                            };
-                            Msg::UpdateArrayRecPropertyMinItems(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                    </div>
-                    <div class="forms-line">
-                        <label>{"Max items: "}</label>
-                        <input type="number" value={max_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<u32>().unwrap_or_default())
-                            };
-                            Msg::UpdateArrayRecPropertyMaxItems(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                    </div>
-                    <div class="forms-line">
-                        <label>{"Content media type: "}</label>
-                        <input type="text3" value={content_media_type} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayRecPropertyCMT(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                    </div>
+                        /*<div class="forms-line">
+                            <label>{"Byte array: "}</label>
+                            <input type="checkbox" checked={byte_array.unwrap_or(false)} onchange={ctx.link().callback(move |e: Event| Msg::UpdateArrayRecPropertyByteArray(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                        </div>*/
+                        <div class="forms-line number-block">
+                            <div class="forms-line min">
+                                <label>{"Min items "}</label>
+                                <input type="number" value={min_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<u32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateArrayRecPropertyMinItems(doc_index, prop_index, recursive_prop_index, num_value)
+                                })} />
+                            </div>
+                            <div class="forms-line max">
+                                <label>{"Max items "}</label>
+                                <input type="number" value={max_items.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<u32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateArrayRecPropertyMaxItems(doc_index, prop_index, recursive_prop_index, num_value)
+                                })} />
+                            </div>
+                        </div>
+                        <div class="forms-line">
+                            <label>{"Content media type "}</label>
+                            <input type="text3" value={content_media_type} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateArrayRecPropertyCMT(doc_index, prop_index, recursive_prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                        </div>
                     </>
                 }
             },            
@@ -867,32 +955,34 @@ impl Model {
                 let max_props = properties.and_then(|p| p.get(recursive_prop_index)).and_then(|p| p.max_properties);
                 html! {
                     <>
-                    <div class="forms-line">
-                        <label>{"Min properties: "}</label>
-                        <input type="number" value={min_props.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<u32>().unwrap_or_default())
-                            };
-                            Msg::UpdateObjectRecPropertyMinProperties(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                        
-                    </div>
-                    <div class="forms-line">
-                        <label>{"Max properties: "}</label>
-                        <input type="number" value={max_props.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
-                            let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
-                            let num_value = if value.is_empty() {
-                                None
-                            } else {
-                                Some(value.parse::<u32>().unwrap_or_default())
-                            };
-                            Msg::UpdateObjectRecPropertyMaxProperties(doc_index, prop_index, recursive_prop_index, num_value)
-                        })} />
-                        
-                    </div>
+                        <div class="forms-line number-block">
+                            <div class="forms-line min">
+                                <label>{"Min properties "}</label>
+                                <input type="number" value={min_props.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<u32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateObjectRecPropertyMinProperties(doc_index, prop_index, recursive_prop_index, num_value)
+                                    })} 
+                                />
+                            </div>
+                            <div class="forms-line max">
+                                <label>{"Max properties "}</label>
+                                <input type="number" value={max_props.map(|n| n.to_string()).unwrap_or_else(|| "".to_owned())} oninput={ctx.link().callback(move |e: InputEvent| {
+                                    let value = e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value();
+                                    let num_value = if value.is_empty() {
+                                        None
+                                    } else {
+                                        Some(value.parse::<u32>().unwrap_or_default())
+                                    };
+                                    Msg::UpdateObjectRecPropertyMaxProperties(doc_index, prop_index, recursive_prop_index, num_value)
+                                    })} 
+                                />
+                            </div>
+                        </div>
                     </>
                 }
             },
@@ -911,35 +1001,47 @@ impl Model {
     fn view_index(&self, doc_index: usize, index_index: usize, ctx: &yew::Context<Self>) -> Html {
         html! {
             <>
-            <div class="forms-line">
-                {""}
-</div>            <div class="forms-line-names">
-                 <div class="form-headers"> 
-                 <label>{format!("Index {} name", index_index+1)}</label>
-                <input type="text3" placeholder={format!("Index {} name", index_index+1)} value={self.document_types[doc_index].indices[index_index].name.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexName(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                </div>
-                <div class="form-headers checkbox">
-                <label>{"Unique"}</label>
-                <input type="checkbox" id="toggle4" class="toggle-input" checked={self.document_types[doc_index].indices[index_index].unique} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexUnique(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
-                <label for="toggle4" class="toggle-label"></label>
-                </div>
-                <div class="form-headers">
-                <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveIndex(doc_index, index_index))}>{"X"}</button>
-                </div>
+                <div class="forms-line-names">
+                    <div class="form-headers">
+                        <label>
+                            <b>
+                                if !self.document_types[doc_index].indices[index_index].name.is_empty() {
+                                    {format!("\"{}\" index", self.document_types[doc_index].indices[index_index].name)}
+                                } else {{format!("Index {} name", index_index+1)}}
+                            </b>
+                        </label>
+                        <input type="text3"
+                            //placeholder={format!("Index {} name", index_index+1)}
+                            value={self.document_types[doc_index].indices[index_index].name.clone()} 
+                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexName(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} 
+                        />
+                    </div>
+                    <div class="form-headers checkbox-block">
+                        <label>{"Unique"}</label>
+                        <label class="container-checkbox">
+                            <input type="checkbox" checked={self.document_types[doc_index].indices[index_index].unique} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexUnique(doc_index, index_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().checked()))} />
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                    <div class="form-headers-remove">
+                        <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveIndex(doc_index, index_index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
+                    </div>
                 </div>            
-<div class="forms-line">
-                
-                    
-                        
-                            <p><b>{"Index properties:"}</b></p>
-                            <div>{for (0..self.document_types[doc_index].indices[index_index].properties.len()).map(|i| self.view_index_properties(doc_index, index_index, i, ctx))}</div>
-                        
-                    
-                
-</div>            <p></p>
-            <div class="forms-line">
-                <button class="button" onclick={ctx.link().callback(move |_| Msg::AddIndexProperty(doc_index, index_index))}>{"Add index property"}</button>
-</div>            <p></p>
+                <div class="forms-line">
+                    <h4 class="black">
+                        if !self.document_types[doc_index].indices[index_index].name.is_empty() {
+                            {format!("\"{}\" index properties", self.document_types[doc_index].indices[index_index].name)}
+                        } else {{format!("Index {} properties", index_index+1)}}
+                    </h4>
+                    <div class="form-headers">
+                        {for (0..self.document_types[doc_index].indices[index_index].properties.len()).map(|i| self.view_index_properties(doc_index, index_index, i, ctx))}
+                    </div>
+                </div>
+                <p></p>
+                <div class="forms-line">
+                    <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddIndexProperty(doc_index, index_index))}><span class="plus">{"+"}</span>{"Add index property"}</button>
+                </div>
+                <p></p>
             </>
         }
     }    
@@ -951,20 +1053,29 @@ impl Model {
             current_sort = sorting_options[1];
         }
         html!(
-            <div class="forms-line">
-                {format!("Property {}: ", prop_index+1)}
-                <input type="text3" value={self.document_types[doc_index].indices[index_index].properties[prop_index].0.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexProperty(doc_index, index_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                <select value={current_sort} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexSorting(doc_index, index_index, prop_index, match e.target_dyn_into::<HtmlSelectElement>().unwrap().value().as_str() {
-                    "Ascending" => String::from("asc"),
-                    "Descending" => String::from("desc"),
-                    _ => panic!("Invalid data type selected"),
-                }))}>
-                    {for sorting_options.iter().map(|option| html! {
-                        <option value={String::from(*option)} selected={&String::from(*option)==current_sort}>{String::from(*option)}</option>
-                    })}
-                </select>
-</div>        
-            )
+            <div class="forms-line number-block index">
+                <div class="form-headers">
+                    <p>
+                        if !self.document_types[doc_index].indices[index_index].properties[prop_index].0.is_empty() {
+                            {format!("\"{}\"", self.document_types[doc_index].indices[index_index].properties[prop_index].0)}
+                        } else {{format!("Index {} property {} name", index_index+1, prop_index+1)}}
+                    </p>
+                    <input type="text3" value={self.document_types[doc_index].indices[index_index].properties[prop_index].0.clone()} oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateIndexProperty(doc_index, index_index, prop_index, e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
+                </div>
+                /*<div class="forms-line max index">    
+                    <select value={current_sort} onchange={ctx.link().callback(move |e: Event| Msg::UpdateIndexSorting(doc_index, index_index, prop_index, match e.target_dyn_into::<HtmlSelectElement>().unwrap().value().as_str() {
+                        "Ascending" => String::from("asc"),
+                        "Descending" => String::from("desc"),
+                        _ => panic!("Invalid data type selected"),
+                        }))}
+                        >
+                        {for sorting_options.iter().map(|option| html! {
+                            <option value={String::from(*option)} selected={&String::from(*option)==current_sort}>{String::from(*option)}</option>
+                        })}
+                    </select>
+                </div>*/  
+            </div>    
+        )
     }
 
     fn generate_json_object(&mut self) -> Vec<String> {
@@ -1479,7 +1590,7 @@ impl Component for Model {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let mut default_document_type = DocumentType::default();
-        default_document_type.properties.push(Property::default());
+        //default_document_type.properties.push(Property::default());
         Self {
             document_types: vec![default_document_type],
             json_object: Vec::new(),
@@ -1775,6 +1886,7 @@ impl Component for Model {
             Msg::Clear => {
                 self.json_object = vec![];
                 self.imported_json = String::new();
+                self.error_messages = vec![];
             }
             
             // OpenAI
@@ -1849,10 +1961,18 @@ impl Component for Model {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let onsubmit = ctx.link().callback(|event: SubmitEvent| {
-            event.prevent_default();
-            Msg::GenerateSchema
-        });
+        
+        let onsubmit = if self.key_valid {
+            ctx.link().callback(|event: SubmitEvent| {
+                event.prevent_default();
+                Msg::GenerateSchema
+            })
+        } else {
+            ctx.link().callback(|event: SubmitEvent| {
+                event.prevent_default();
+                Msg::SubmitKey
+            })
+        };        
 
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
@@ -1876,66 +1996,76 @@ impl Component for Model {
         html! {
             <main class="home">
                 <body>
+                    <div class="top-section_ai">
+                        <img class="logo_ai" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="100" height="50" />
+                        <h1 class="header_ai">{"Data Contract Creator"}</h1>
+                    </div>
                     <div class="container_ai">
-                        <div class="top-section_ai">
-                            <img class="logo_ai" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="200" height="100" />
-                            <h1 class="header_ai">{"Data Contract Creator"}</h1>
-                        </div>
                         <div class="content-container_ai">
                             <div class="input-container_ai">
+                                //<h2>{"Generate a template contract using AI"}</h2>
+                                <p>{"Generate a data contract using AI here or by filling out the form below."}</p>
                                 { if !self.key_valid { html! {
-                                    <div class="form-container_ai">
-                                        <div class="input-button-container_ai">
+                                        <form onsubmit={onsubmit}>
+                                            <label class="padded-label">{"  OpenAI API key"}<a class="ai-link" href="https://platform.openai.com/account/api-keys" target="_blank"><img src="https://media.dash.org/wp-content/uploads/external-link.svg"/></a></label>
+                                            <div class="input-button-container_ai">
                                             <input type="password"
-                                                placeholder="Paste OpenAI API key here"
+                                                //placeholder={"First, submit an OpenAI API key"}
                                                 value={self.user_key.clone()}
                                                 oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                                            <button onclick={ctx.link().callback(|_| Msg::SubmitKey)}>{"Submit"}</button>
-                                        </div>
-                                    </div>
-                                  }} else { html! {
-                                    <form onsubmit={onsubmit} class="form-container_ai">
-                                        <div class="input-button-container_ai">
-                                            <input
-                                                placeholder={
-                                                    if self.schema.is_empty() {
-                                                        "Describe your app here"
-                                                    } else {
-                                                        "Describe any adjustments here"
-                                                    }
-                                                }
-                                                value={self.prompt.clone()}
-                                                oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
-                                            />
-                                            <button type="submit">{"Generate"}</button>
-                                        </div>
-                                    </form>
-                                  }}
-                                }
-                                {
-                                    if self.loading {
-                                        html! {
-                                            <div class="loader_ai"></div>
-                                        }
-                                    } else {
-                                        html! {}
-                                    }
-                                }                                 
-                            </div>
-                            <div class="error-text_ai">
-                                {
-                                    if self.error_messages_ai.clone() != self.error_messages.clone() {
-                                        self.error_messages_ai.clone()
-                                    } else {
-                                        vec!["".to_string()]
-                                    }
+                                                <button type="submit">{"Submit"}</button>
+                                            </div>
+                                        </form>
+                                    }} else { html! {
+                                        <form onsubmit={onsubmit}>
+                                            { if self.schema.is_empty() { 
+                                                html! { <label class="padded-label">{"  Project description"}</label> }
+                                              } else { html! { <label class="padded-label">{"  Adjustments to existing contract"}</label>
+                                                } 
+                                              }
+                                            }
+                                            <div class="input-button-container_ai">
+                                                <input
+                                                    /*placeholder={
+                                                        if self.schema.is_empty() {
+                                                            "Describe your project here"
+                                                        } else {
+                                                            "Describe any adjustments here"
+                                                        }
+                                                    }*/
+                                                    value={self.prompt.clone()}
+                                                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                                                />
+                                                <button type="submit">{"Generate"}</button>
+                                            </div>
+                                        </form>
+                                    }}
                                 }
                             </div>
-                            <br/><br/>
-                        </div>
+                        </div> 
+                        {
+                            if self.loading {
+                                html! {
+                                    <div class="loader_ai"></div>
+                                }
+                            } else {
+                                html! {}
+                            }
+                        }
+                        {
+                            if self.error_messages_ai.clone() != self.error_messages.clone() {
+                                html! {<div class="error-text_ai">{self.error_messages_ai.clone()}</div>}
+                            } else {
+                                html! {<div>{vec!["".to_string()]}</div>}
+                            }
+                        }
                     </div>
                     <div class="columns">
                     <div class="column-left">
+                    <div class="column-text">
+                    <img src="https://media.dash.org/wp-content/uploads/icon-left.svg" />
+                    <p>{"Use the left column to build, edit, and submit a data contract."}</p>
+                    </div>
 
                         // show input fields
                         {self.view_document_types(ctx)}
@@ -1951,6 +2081,10 @@ impl Component for Model {
                         </div>
                     </div>
                     <div class="column-right">
+                    <div class="column-text">
+                    <img src="https://media.dash.org/wp-content/uploads/icon-left.svg" class="rotate-180" />
+                    <p>{"Use the right column to copy the generated data contract to your clipboard or import a contract."}</p>
+                    </div>
                     
                         // format and display json object
                       <div class="input-container">
@@ -1975,29 +2109,33 @@ impl Component for Model {
                             </pre>
                             <h3>{if self.json_object.len() != 0 {"Without whitespace:"} else {""}}</h3>
                             <pre>{textarea}</pre>
-                            <p><b>
+                            <p>
                             {
                                 if serde_json::to_string(&json_obj).unwrap().len() > 2 {
                                 format!("Size: {} bytes", serde_json::to_string(&json_obj).unwrap().len())
                                 } else {String::from("Size: 0 bytes")}
                             }
-                            </b></p>
+                            </p>
                             <div class="button-block">
                               <button class="button-clear" onclick={ctx.link().callback(|_| Msg::Clear)}><span class="clear">{"X"}</span>{"Clear"}</button>
-                              <button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}>{"Import"}</button>
+                              <button class="button-import" onclick={ctx.link().callback(|_| Msg::Import)}><img src="https://media.dash.org/wp-content/uploads/arrow.down_.square.fill_.svg"/>{"Import"}</button>
                             </div>
-                        
-                        <br/>
                         <div class="prompt-history">
-                            <h3>{if !self.history.is_empty() {"Prompt history:"} else {""}}</h3>
+                            {if !self.history.is_empty() {html!{<h3>{"Prompt history:"}</h3>}} else {html!{""}}}
                             {for self.history.iter().map(|input| html! {
                                 <div>{input}</div>
                             })}
                         </div>
                         </div>
                     </div>
-                </div>
-            </body>
+                    </div>
+                    <footer>
+                        <a href="https://github.com/dashpay/data-contract-creator" target="_blank">
+                            <div class="icon-el github"></div>
+                        </a>
+                        <p>{"© 2023 Dashpay"}</p>
+                    </footer>
+                </body>
         </main>
         }
     }
