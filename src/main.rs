@@ -1886,6 +1886,7 @@ impl Component for Model {
             Msg::Clear => {
                 self.json_object = vec![];
                 self.imported_json = String::new();
+                self.error_messages = vec![];
             }
             
             // OpenAI
@@ -2127,19 +2128,13 @@ impl Component for Model {
                         </div>
                         </div>
                     </div>
-                </div>
-                <footer>
-                <div class="footer">
-                <div class="footer-block">
-                <a href="https://github.com/dashpay/data-contract-creator" target="_blank">
-                <div class="icon-el github"></div></a>
-                </div>
-                <div class="footer-block">
-                <img class="logo_ai-footer" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="100" height="50" />
-                </div>
-                </div>
-                <p>{"© 2023 Dash Pay"}</p>
-                </footer>
+                    </div>
+                    <footer>
+                        <a href="https://github.com/dashpay/data-contract-creator" target="_blank">
+                            <div class="icon-el github"></div>
+                        </a>
+                        <p>{"© 2023 Dashpay"}</p>
+                    </footer>
                 </body>
         </main>
         }

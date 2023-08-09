@@ -671,9 +671,11 @@ $body-color: #008de4;
     justify-content: center;
   }
   a.ai-link img {
-    width: 24px;
+    width: 20px;
     height: 13px;
-}
+    vertical-align: middle;
+    margin-bottom: 3px;
+  }
   .input-container_ai{
     width: 100%;
     max-width: 660px;
@@ -785,11 +787,12 @@ $body-color: #008de4;
 }
 footer{
   text-align: center;
-  padding: 20px;
 }
 .footer{
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
 }
 .icon-el {
   display: inline-block;
@@ -801,8 +804,12 @@ footer{
   margin: 0 5px;
   background-position: center;
 }
+.logo_ai-footer {
+  padding: 10px;
+}
 .icon-el.github {
   background-image: url(https://media.dash.org/wp-content/uploads/Octicons-mark-github.svg.png);
+  padding-bottom: 20px;
 }
 
 @media only screen and (max-width:900px){
