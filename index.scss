@@ -314,7 +314,7 @@ select {
   border-radius: 5px;
   margin-top: 2px;
   margin-bottom: 2px;
-  font-weight: 400;
+  font-weight: 600;
   &:hover {
     cursor: pointer;
   }
@@ -331,7 +331,7 @@ select {
   border-radius: 5px;
   margin-top: 2px;
   font-size: 17px;
-  font-weight: 400;
+  font-weight: 600;
   margin-bottom: 2px;
   color: #008de4;
   &:hover {
@@ -339,8 +339,8 @@ select {
   }
 }
 .button2 span {
-  width: 25px;
-  height: 25px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -355,7 +355,7 @@ select {
   background-color: $primary-color;
   color: #fff;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .button-import {
@@ -367,7 +367,7 @@ select {
   margin-top: 2px;
   margin-bottom: 2px;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 600;
   display: flex;
   align-items: center;
   &:hover {
@@ -382,22 +382,26 @@ button.button.property {
   font-size: 15px;
   background: rgba(0, 141, 228, 0.08);
   color: #008de4;
-  font-weight: 400;
-  //margin-bottom: 7px;
+  font-weight: 600;
+  margin-bottom: 7px;
 }
 button.button.property span {
   color: #fff;
-  background: #008de4;
-  margin: 5px;
-  padding: 1px 6px;
-  border-radius: 50%;
-  font-size: 18px;
+    background: #008de4;
+    margin: 5px;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 21px;
+    display: inline-flex;
 }
 button.button.remove-text {
   background: rgba(232, 92, 74, 0.1);
   color: rgba(232, 92, 74, 1);
   font-size: 17px;
-  font-weight: 400;
+  font-weight: 600;
   width: 100%;
 }
 
@@ -472,7 +476,7 @@ button.button.remove-text {
   width: 80px;
   color: #2196F3;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 600;
   &:hover {
     cursor: pointer;
   }
@@ -527,7 +531,7 @@ span.clear {
 }
 .column-left, .column-right {
   width: 100%;
-  //max-width: 540px;
+  max-width: 540px;
 }
 .column-left{
   margin-right: 4%;
@@ -615,17 +619,6 @@ span.clear {
   text-align: center;
 }
 
-@media only screen and (max-width:900px){
-  .columns {
-    flex-direction: column;
-  }
-  .column-left, .column-right {
-    width: 100%;
-}
-.column-left{
-  margin-left: 0;
-}
-}
 // AI
 // Variables
 $body-color: #008de4;
@@ -659,7 +652,7 @@ $body-color: #008de4;
   align-items: center;
   justify-content: space-evenly;
   width: 90%;
-  //max-width: 1200px;
+  max-width: 1150px;
   background: #fff;
   flex-grow: 1;
   border-radius: 30px;
@@ -677,6 +670,10 @@ $body-color: #008de4;
     border-radius: 30px;
     justify-content: center;
   }
+  a.ai-link img {
+    width: 24px;
+    height: 13px;
+}
   .input-container_ai{
     width: 100%;
     max-width: 660px;
@@ -754,7 +751,7 @@ $body-color: #008de4;
   button {
     padding: 5px 20px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     height: 30px;
     background-color: $body-color;
     color: #fff;
@@ -785,4 +782,79 @@ $body-color: #008de4;
 
 .history-padding {
   padding-bottom: 30px;
+}
+footer{
+  text-align: center;
+  padding: 20px;
+}
+.footer{
+  display: flex;
+  justify-content: space-between;
+}
+.icon-el {
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 1;
+  width: 25px;
+  height: 25px;
+  margin: 0 5px;
+  background-position: center;
+}
+.icon-el.github {
+  background-image: url(https://media.dash.org/wp-content/uploads/Octicons-mark-github.svg.png);
+}
+
+@media only screen and (max-width:900px){
+  .columns {
+    flex-direction: column;
+  }
+  .column-left, .column-right {
+    width: 100%;
+}
+.column-left{
+  margin-left: 0;
+}
+.form-headers-type {
+  width: 46%;
+}
+.forms-line-names input[type=text3] {
+  width: 87.5%;
+}
+}
+@media only screen and (max-width:834px){
+  body{
+    padding: 5px;
+  }
+  .column-left, .column-right{
+    max-width: 100%;
+  }
+  .column-left{
+    margin-right: 0;
+  }
+  .columns{
+    width: 100%;
+  }
+  .container_ai{
+    width:100%;
+  }
+}
+@media only screen and (max-width:705px){
+  form{
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+    margin: auto;
+  }
+}
+@media only screen and (max-width:460px){
+.forms-line-names input[type=text3] {
+  width: 78%;
+}
+.form-headers-type {
+  width: 70%;
+}
+.forms-line.number-block input {
+  width: 83%;
+}
 }

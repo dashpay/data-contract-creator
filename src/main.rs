@@ -1039,7 +1039,7 @@ impl Model {
                 </div>
                 <p></p>
                 <div class="forms-line">
-                    <button class="button" onclick={ctx.link().callback(move |_| Msg::AddIndexProperty(doc_index, index_index))}>{"Add index property"}</button>
+                    <button class="button property" onclick={ctx.link().callback(move |_| Msg::AddIndexProperty(doc_index, index_index))}><span class="plus">{"+"}</span>{"Add index property"}</button>
                 </div>
                 <p></p>
             </>
@@ -2006,7 +2006,7 @@ impl Component for Model {
                                 <p>{"Generate a data contract using AI here or by filling out the form below."}</p>
                                 { if !self.key_valid { html! {
                                         <form onsubmit={onsubmit}>
-                                            <label class="padded-label">{"  OpenAI API key"}</label>
+                                            <label class="padded-label">{"  OpenAI API key"}<a class="ai-link" href="https://platform.openai.com/account/api-keys" target="_blank"><img src="https://media.dash.org/wp-content/uploads/external-link.svg"/></a></label>
                                             <div class="input-button-container_ai">
                                             <input type="password"
                                                 //placeholder={"First, submit an OpenAI API key"}
@@ -2128,6 +2128,18 @@ impl Component for Model {
                         </div>
                     </div>
                 </div>
+                <footer>
+                <div class="footer">
+                <div class="footer-block">
+                <a href="https://github.com/dashpay/data-contract-creator">
+                <div class="icon-el github"></div></a>
+                </div>
+                <div class="footer-block">
+                <img class="logo_ai-footer" src="https://media.dash.org/wp-content/uploads/dash-logo.svg" alt="Dash logo" width="100" height="50" />
+                </div>
+                </div>
+                <p>{"© 2023 Dash Pay"}</p>
+                </footer>
                 </body>
         </main>
         }
