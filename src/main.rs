@@ -2131,7 +2131,7 @@ impl Component for Model {
                 <footer>
                 <div class="footer">
                 <div class="footer-block">
-                <a href="https://github.com/dashpay/data-contract-creator">
+                <a href="https://github.com/dashpay/data-contract-creator" target="_blank">
                 <div class="icon-el github"></div></a>
                 </div>
                 <div class="footer-block">
