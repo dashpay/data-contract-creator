@@ -17,6 +17,7 @@ main {
   justify-content: top;
   height: 100%;
   width: 100%;
+  align-self: center;
 }
 
 body {
@@ -326,7 +327,7 @@ select {
 .button2 {
   border: none;
   background-color: transparent;
-  padding: 10px 35px;
+  padding: 5px;
   border-radius: 5px;
   margin-top: 2px;
   font-size: 17px;
@@ -566,7 +567,7 @@ span.clear {
 
 .textarea-whitespace {
   width: 95%;
-  height: 150px;
+  height: 200px;
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;

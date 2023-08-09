@@ -411,7 +411,7 @@ impl Model {
                             <h2>
                                 if !self.document_types[index].name.is_empty() {
                                     {format!("\"{}\"", self.document_types[index].name)}
-                                } else {{format!("Document type {}", index+1)}}
+                                } else {{format!("Document Type {}", index+1)}}
                             </h2>
                             <button class="button remove" onclick={ctx.link().callback(move |_| Msg::RemoveDocumentType(index))}><img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/></button>
                         </div>
@@ -517,7 +517,7 @@ impl Model {
                 <h4>
                     {if selected_data_type != String::from("Object") {
                         if !self.document_types[doc_index].properties[prop_index].name.is_empty() {
-                            {format!("\"{}\" optional fields", self.document_types[doc_index].properties[prop_index].name)}
+                            {format!("\"{}\" property optional fields", self.document_types[doc_index].properties[prop_index].name)}
                         } else {{format!("Property {} optional fields", prop_index+1)}}
                     } else {"".to_string()}}
                 </h4>
@@ -665,7 +665,7 @@ impl Model {
                     </div>
                     <h4>
                     {if !self.document_types[doc_index].properties[prop_index].name.is_empty() {
-                        {format!("\"{}\" optional fields", self.document_types[doc_index].properties[prop_index].name)}
+                        {format!("\"{}\" property optional fields", self.document_types[doc_index].properties[prop_index].name)}
                     } else {{format!("Property {} optional fields", prop_index+1)}}}
                     </h4>
                     <div class="forms-line number-block">
@@ -789,7 +789,7 @@ impl Model {
                     {
                         if let Some(properties) = &self.document_types[doc_index].properties[prop_index].properties {
                             if !properties[recursive_prop_index].name.is_empty() {
-                                html! { format!("\"{}.{}\" optional fields", self.document_types[doc_index].properties[prop_index].name, properties[recursive_prop_index].name) }
+                                html! { format!("\"{}.{}\" inner property optional fields", self.document_types[doc_index].properties[prop_index].name, properties[recursive_prop_index].name) }
                             } else {
                                 html! { format!("\"{}\" inner property {} optional fields", self.document_types[doc_index].properties[prop_index].name, recursive_prop_index + 1) }
                             }
@@ -1590,7 +1590,7 @@ impl Component for Model {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let mut default_document_type = DocumentType::default();
-        default_document_type.properties.push(Property::default());
+        //default_document_type.properties.push(Property::default());
         Self {
             document_types: vec![default_document_type],
             json_object: Vec::new(),
@@ -2003,7 +2003,7 @@ impl Component for Model {
                         <div class="content-container_ai">
                             <div class="input-container_ai">
                                 //<h2>{"Generate a template contract using AI"}</h2>
-                                <p>{"Generate a data contract using AI here or use the forms below."}</p>
+                                <p>{"Generate a data contract using AI here or by filling out the form below."}</p>
                                 { if !self.key_valid { html! {
                                         <form onsubmit={onsubmit}>
                                             <label class="padded-label">{"  OpenAI API key"}</label>
@@ -2082,7 +2082,7 @@ impl Component for Model {
                     <div class="column-right">
                     <div class="column-text">
                     <img src="https://media.dash.org/wp-content/uploads/icon-left.svg" class="rotate-180" />
-                    <p>{"Use the right column to copy the generated data contract to your clipboard or import."}</p>
+                    <p>{"Use the right column to copy the generated data contract to your clipboard or import a contract."}</p>
                     </div>
                     
                         // format and display json object
