@@ -13,41 +13,61 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement, console};
 
+
+// NOTE August 2023: This app originally used the OpenAI API text completions, but has now changed to chat completions.
+// The method of prepending a first prompt with information (a) and then prepending all subsequent prompts with information (b) can probably be replaced with something better.
+
+
 // Context prepended to the first user-input prompt, when creating a new contract
 const FIRST_PROMPT_PRE: &str = r#"
-Here is the an example Dash Platform data contract JSON schema. It's for the Dashpay app, which is meant to be similar to Venmo, but for the Dash Platform blockchain. It has three document types: "profile", "contactInfo", and "contactRequest".
+I'm going to ask you to generate a Dash Platform data contract after giving you some context and rules. 
 
-{"profile":{"type":"object","indices":[{"name":"ownerId","properties":[{"$ownerId":"asc"}],"unique":true},{"name":"ownerIdAndUpdatedAt","properties":[{"$ownerId":"asc"},{"$updatedAt":"asc"}]}],"properties":{"avatarUrl":{"type":"string","format":"uri","maxLength":2048},"avatarHash":{"type":"array","byteArray":true,"minItems":32,"maxItems":32,"description":"SHA256 hash of the bytes of the image specified by avatarUrl"},"avatarFingerprint":{"type":"array","byteArray":true,"minItems":8,"maxItems":8,"description":"dHash the image specified by avatarUrl"},"publicMessage":{"type":"string","maxLength":140},"displayName":{"type":"string","maxLength":25}},"required":["$createdAt","$updatedAt"],"additionalProperties":false},"contactInfo":{"type":"object","indices":[{"name":"ownerIdAndKeys","properties":[{"$ownerId":"asc"},{"rootEncryptionKeyIndex":"asc"},{"derivationEncryptionKeyIndex":"asc"}],"unique":true},{"name":"ownerIdAndUpdatedAt","properties":[{"$ownerId":"asc"},{"$updatedAt":"asc"}]}],"properties":{"encToUserId":{"type":"array","byteArray":true,"minItems":32,"maxItems":32},"rootEncryptionKeyIndex":{"type":"integer","minimum":0},"derivationEncryptionKeyIndex":{"type":"integer","minimum":0},"privateData":{"type":"array","byteArray":true,"minItems":48,"maxItems":2048,"description":"This is the encrypted values of aliasName + note + displayHidden encoded as an array in cbor"}},"required":["$createdAt","$updatedAt","encToUserId","privateData","rootEncryptionKeyIndex","derivationEncryptionKeyIndex"],"additionalProperties":false},"contactRequest":{"type":"object","indices":[{"name":"ownerIdUserIdAndAccountRef","properties":[{"$ownerId":"asc"},{"toUserId":"asc"},{"accountReference":"asc"}],"unique":true},{"name":"ownerIdUserId","properties":[{"$ownerId":"asc"},{"toUserId":"asc"}]},{"name":"userIdCreatedAt","properties":[{"toUserId":"asc"},{"$createdAt":"asc"}]},{"name":"ownerIdCreatedAt","properties":[{"$ownerId":"asc"},{"$createdAt":"asc"}]}],"properties":{"toUserId":{"type":"array","byteArray":true,"minItems":32,"maxItems":32,"contentMediaType":"application/x.dash.dpp.identifier"},"encryptedPublicKey":{"type":"array","byteArray":true,"minItems":96,"maxItems":96},"senderKeyIndex":{"type":"integer","minimum":0},"recipientKeyIndex":{"type":"integer","minimum":0},"accountReference":{"type":"integer","minimum":0},"encryptedAccountLabel":{"type":"array","byteArray":true,"minItems":48,"maxItems":80},"autoAcceptProof":{"type":"array","byteArray":true,"minItems":38,"maxItems":102},"coreHeightCreatedAt":{"type":"integer","minimum":1}},"required":["$createdAt","toUserId","encryptedPublicKey","senderKeyIndex","recipientKeyIndex","accountReference"],"additionalProperties":false}}
+*Background info*: 
+Dash Platform is a blockchain for decentralized applications that are backed by data contracts. 
+Data contracts are JSON schemas that are meant to define the structures of data an application can store. 
+They must define at least one document type, where a document type defines a type of document that can be submitted to a data contract.
 
-The following requirements must be followed in Dash Platform data contracts: 
+*Example*: 
+Here is an example of a data contract with one document type, "nft":
+
+{"nft":{"type":"object","properties":{"name":{"type":"string","description":"Name of the NFT token","maxLength":63},"description":{"type":"string","description":"Description of the NFT token","maxLength":256},"imageUrl":{"type":"string","description":"URL of the image associated with the NFT token","maxLength":2048,"format":"uri"},"imageHash":{"type":"array","description":"SHA256 hash of the bytes of the image specified by tokenImageUrl","byteArray":true,"minItems":32,"maxItems":32},"imageFingerprint":{"type":"array","description":"dHash the image specified by tokenImageUrl","byteArray":true,"minItems":8,"maxItems":8},"price":{"type":"number","description":"Price of the NFT token in Dash","minimum":0},"quantity":{"type":"integer","description":"Number of tokens in circulation","minimum":0},"metadata":{"type":"array","description":"Any additional metadata associated with the NFT token","byteArray":true,"minItems":0,"maxItems":2048}},"indices":[{"name":"price","properties":[{"price":"asc"}]},{"name":"quantity","properties":[{"quantity":"asc"}]},{"name":"priceAndQuantity","properties":[{"price":"asc"},{"quantity":"asc"}]}],"required":["name","price","quantity"],"additionalProperties":false}}
+
+While this example data contract only has one document type, data contracts should usually have more than one. For example, the example "nft" data contract could also have document types for "listing" and "transaction". Maybe the developer also wants to have user profiles, so they could include a "userProfile" document type.
+
+*Requirements*: 
+The following requirements must be met in Dash Platform data contracts: 
  - Indexes may only have "asc" sort order. 
- - All "array" properties must specify ""byteArray": true". 
- - All "string" properties that are used in indexes must specify "maxLength", and it cannot be more than 63. 
+ - All "array" properties must specify "byteArray": true. 
+ - All "string" properties that are used in indexes must specify "maxLength", which must be no more than 63. 
  - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255. 
  - All "object" properties must define at least 1 property within themselves. 
 
-Note that not all properties need to be included in the "required" array. 
-Also note that $ownerId, $createdAt, and $updatedAt are the only properties that can be prefixed with a "$", and are the only built-in "system properties" that can be used in a data contract and don't need to be defined in its properties.
- 
-Given this background, generate a highly comprehensive data contract JSON schema using the context below. 
-Include descriptions for every document type and property. Be creative and extensive and utilize multiple document types. 
-Include indexes for any properties that it makes sense for a useful app to index. 
-Do not explain anything or return anything else other than a properly formatted data contract JSON schema:
+*App description*: 
+Now I will give you a user prompt that describes the application that you will generate a data contract for.
+
+When creating the data contract, please:
+ - Include descriptions for every document type and property. Be creative, extensive, and utilize multiple document types if possible. 
+ - Include indexes for any properties that it makes sense for a useful app to index. More is better. 
+ - Do not explain anything or return anything else other than a properly formatted data contract JSON schema. 
+ - Double check that all requirements and requests above are met. 
+
+App description: 
 
 "#;
 
 // Context prepended to user-input prompts after the first prompt. The current schema comes after this, then the user-input context.
 const SECOND_PROMPT_PRE: &str = r#"
-The following requirements must be followed in Dash Platform data contracts: 
+I'm going to ask you to make some changes to a Dash Platform data contract after giving you some context and rules. 
+
+*Requirements*:
+The following requirements must be met in Dash Platform data contracts: 
  - Indexes may only have "asc" sort order. 
- - All "array" properties must specify ""byteArray": true". 
- - All "string" properties that are used in indexes must specify "maxLength", and it cannot be more than 63. 
+ - All "array" properties must specify "byteArray": true. 
+ - All "string" properties that are used in indexes must specify "maxLength", which must be no more than 63. 
  - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255. 
  - All "object" properties must define at least 1 property within themselves. 
 
-Note that not all properties need to be included in the "required" array.
-Also note that $ownerId, $createdAt, and $updatedAt are the only properties that can be prefixed with a "$", and are the only built-in "system properties" that can be used in a data contract and don't need to be defined in its properties.
-
+*Changes to be made*: 
 Make the following change(s) to this Dash Platform data contract JSON schema, along with any other changes that are necessary to make it valid according to the rules above. 
 Note that the highest-level keys in the data contract are called "document types".
 Do not explain anything or return anything else other than a properly formatted JSON schema:
@@ -55,13 +75,11 @@ Do not explain anything or return anything else other than a properly formatted 
 "#;
 
 /// Calls OpenAI
-/// For text-davinci-003, max_tokens 3000 is the most we can reasonably allow. 
-/// Temperature is like a randomness/creativity factor. Temps above 0.7 start to produce bad results. 0.2 seems to be optimal.
 pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyhow::Error> {
     let params = serde_json::json!({
-        "model": "text-davinci-003",
-        "prompt": prompt,
-        "max_tokens": 3000,
+        "model": "gpt-3.5-turbo-16k",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 8000,
         "temperature": 0.2
     });
     let params = params.to_string();
@@ -77,7 +95,7 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     opts.body(Some(&JsValue::from_str(&params)));
     opts.mode(RequestMode::Cors);
 
-    let request = Request::new_with_str_and_init("https://api.openai.com/v1/completions", &opts).unwrap();
+    let request = Request::new_with_str_and_init("https://api.openai.com/v1/chat/completions", &opts).unwrap();
 
     let window = web_sys::window().unwrap();
     let response = JsFuture::from(window.fetch_with_request(&request)).await;
@@ -122,7 +140,7 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     }
     
     let json: serde_json::Value = serde_json::from_str(&text).unwrap();
-    let schema_text = json["choices"][0]["text"].as_str().unwrap_or("");
+    let schema_text = json["choices"][0]["message"]["content"].as_str().unwrap_or("");
 
     // Extract the JSON schema from the response
     let start = schema_text.find('{');
