@@ -92,7 +92,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     opts.method("POST");
     opts.headers(&headers);
     opts.body(Some(&JsValue::from_str(&params)));
-    opts.mode(RequestMode::NoCors);
+    opts.mode(RequestMode::Cors);
 
     let request = Request::new_with_str_and_init("https://5ae3yzqix4.execute-api.us-west-2.amazonaws.com/", &opts).unwrap();
 
