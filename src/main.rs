@@ -129,7 +129,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     };
 
     // Log to console
-    console::log_1(&text_js);
+    // console::log_1(&text_js);
 
     if !response.ok() {
         let status = response.status();
@@ -152,7 +152,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     match (start, end) {
         (Some(start), Some(end)) => {
             let schema_json = &schema_text[start..=end];
-            console::log_1(&JsValue::from_str(schema_json));
+            //console::log_1(&JsValue::from_str(schema_json));
             match serde_json::from_str::<serde_json::Value>(schema_json) {
                 Ok(_) => Ok(schema_json.to_string()),
                 Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON.")),
