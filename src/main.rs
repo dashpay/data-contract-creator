@@ -94,13 +94,14 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     opts.body(Some(&JsValue::from_str(&params)));
     opts.mode(RequestMode::Cors);
 
-    let request = Request::new_with_str_and_init("https://22vazdmku2qz3prrn57elhdj2i0wyejr.lambda-url.us-west-2.on.aws/", &opts).unwrap();
+    let request = Request::new_with_str_and_init("https://22vazdmku2qz3prrn57elhdj2i0wyejr.lambda-url.us-west-2.on.aws/", &opts)
+        .map_err(|e| anyhow::anyhow!("Failed to create request: {:?}", e))?;
 
-    let window = web_sys::window().unwrap();
+    let window = web_sys::window().ok_or_else(|| anyhow::anyhow!("Failed to obtain window object"))?;
     let response = JsFuture::from(window.fetch_with_request(&request)).await;
 
-    console::log_1(&JsValue::from_str("Raw response received:"));
-    console::log_1(&response.clone().unwrap());
+    // console::log_1(&JsValue::from_str("Raw response received:"));
+    // console::log_1(&response.clone().unwrap());
     
     let response = match response {
         Ok(resp) => resp,
