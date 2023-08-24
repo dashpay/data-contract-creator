@@ -94,7 +94,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     opts.body(Some(&JsValue::from_str(&params)));
     opts.mode(RequestMode::Cors);
 
-    let request = Request::new_with_str_and_init("https://ln27y3savrd7bbihghwanqwgfq0scpkc.lambda-url.us-west-2.on.aws/", &opts).unwrap();
+    let request = Request::new_with_str_and_init("https://22vazdmku2qz3prrn57elhdj2i0wyejr.lambda-url.us-west-2.on.aws/", &opts).unwrap();
 
     let window = web_sys::window().unwrap();
     let response = JsFuture::from(window.fetch_with_request(&request)).await;
