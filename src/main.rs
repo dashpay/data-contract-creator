@@ -2118,6 +2118,7 @@ impl Component for Model {
     }
 }
 
+#[allow(dead_code)]
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
     yew::Renderer::<Model>::new().render();
