@@ -11,7 +11,9 @@ use serde_json::{json, Map, Value};
 use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
-use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement, console};
+use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement};
+#[allow(unused_imports)]
+use web_sys::console;
 
 
 // NOTE August 2023: This app originally used the OpenAI API text completions, but has now changed to chat completions.
@@ -37,9 +39,9 @@ While this example data contract only has one document type, data contracts shou
 *Requirements*: 
 The following requirements must be met in Dash Platform data contracts: 
  - Indexes may only have "asc" sort order. 
- - All "array" properties must specify "byteArray": true. 
  - All "string" properties that are used in indexes must specify "maxLength", which must be no more than 63. 
  - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255. 
+ - All "array" properties must specify `"byteArray": true`. 
  - All "object" properties must define at least 1 property within themselves. 
 
 *App description*: 
@@ -49,7 +51,7 @@ When creating the data contract, please:
  - Include descriptions for every document type and property. Be creative, extensive, and utilize multiple document types if possible. 
  - Include indexes for any properties that it makes sense for a useful app to index. More is better. 
  - Do not explain anything or return anything else other than a properly formatted data contract JSON schema. 
- - Double check that all requirements and requests above are met. 
+ - Double check that all requirements and requests above are met. Again, all "array" properties must specify `"byteArray": true`. 
 
 App description: 
 
@@ -1579,7 +1581,11 @@ impl Model {
             .filter_map(|error| {
                 if let ConsensusError::BasicError(inner) = error {
                     if let dpp::errors::consensus::basic::basic_error::BasicError::JsonSchemaError(json_error) = inner {
-                        Some(format!("JsonSchemaError: {}, Path: {}", json_error.error_summary().to_string(), json_error.instance_path().to_string()))
+                        if json_error.error_summary().contains("\"items\" is a required property") {
+                            Some(String::from("JsonSchemaError: \"array\" properties must specify \"byteArray\": true. In the dynamic form, just change the property from an array to a string and back to an array again, and resubmit."))
+                        } else {
+                            Some(format!("JsonSchemaError: {}, Path: {}", json_error.error_summary().to_string(), json_error.instance_path().to_string()))
+                        }
                     } else { 
                         Some(format!("{}", inner)) 
                     }
