@@ -11,7 +11,9 @@ use serde_json::{json, Map, Value};
 use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
-use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement, console};
+use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement};
+#[allow(unused_imports)]
+use web_sys::console;
 
 
 // NOTE August 2023: This app originally used the OpenAI API text completions, but has now changed to chat completions.
@@ -37,9 +39,9 @@ While this example data contract only has one document type, data contracts shou
 *Requirements*: 
 The following requirements must be met in Dash Platform data contracts: 
  - Indexes may only have "asc" sort order. 
- - All "array" properties must specify "byteArray": true. 
  - All "string" properties that are used in indexes must specify "maxLength", which must be no more than 63. 
  - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255. 
+ - All "array" properties must specify `"byteArray": true`. 
  - All "object" properties must define at least 1 property within themselves. 
 
 *App description*: 
@@ -49,7 +51,7 @@ When creating the data contract, please:
  - Include descriptions for every document type and property. Be creative, extensive, and utilize multiple document types if possible. 
  - Include indexes for any properties that it makes sense for a useful app to index. More is better. 
  - Do not explain anything or return anything else other than a properly formatted data contract JSON schema. 
- - Double check that all requirements and requests above are met. 
+ - Double check that all requirements and requests above are met. Again, all "array" properties must specify `"byteArray": true`. 
 
 App description: 
 
@@ -75,7 +77,7 @@ Do not explain anything or return anything else other than a properly formatted 
 "#;
 
 /// Calls OpenAI
-pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyhow::Error> {
+pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     let params = serde_json::json!({
         "model": "gpt-3.5-turbo-16k",
         "messages": [{"role": "user", "content": prompt}],
@@ -87,7 +89,6 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     let mut opts = RequestInit::new();
     let headers = web_sys::Headers::new().unwrap();
 
-    headers.append("Authorization", &format!("Bearer {}", user_key)).unwrap();
     headers.append("Content-Type", "application/json").unwrap();
 
     opts.method("POST");
@@ -95,10 +96,14 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     opts.body(Some(&JsValue::from_str(&params)));
     opts.mode(RequestMode::Cors);
 
-    let request = Request::new_with_str_and_init("https://api.openai.com/v1/chat/completions", &opts).unwrap();
+    let request = Request::new_with_str_and_init("https://22vazdmku2qz3prrn57elhdj2i0wyejr.lambda-url.us-west-2.on.aws/", &opts)
+        .map_err(|e| anyhow::anyhow!("Failed to create request: {:?}", e))?;
 
-    let window = web_sys::window().unwrap();
+    let window = web_sys::window().ok_or_else(|| anyhow::anyhow!("Failed to obtain window object"))?;
     let response = JsFuture::from(window.fetch_with_request(&request)).await;
+
+    // console::log_1(&JsValue::from_str("Raw response received:"));
+    // console::log_1(&response.clone().unwrap());
     
     let response = match response {
         Ok(resp) => resp,
@@ -126,7 +131,7 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     };
 
     // Log to console
-    console::log_1(&text_js);
+    // console::log_1(&text_js);
 
     if !response.ok() {
         let status = response.status();
@@ -149,7 +154,7 @@ pub async fn call_openai(prompt: &str, user_key: &String) -> Result<String, anyh
     match (start, end) {
         (Some(start), Some(end)) => {
             let schema_json = &schema_text[start..=end];
-            console::log_1(&JsValue::from_str(schema_json));
+            //console::log_1(&JsValue::from_str(schema_json));
             match serde_json::from_str::<serde_json::Value>(schema_json) {
                 Ok(_) => Ok(schema_json.to_string()),
                 Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON.")),
@@ -179,12 +184,6 @@ struct Model {
 
 
     // OpenAI fields
-
-    /// The API key
-    user_key: String,
-
-    /// Is the key valid?
-    key_valid: bool,
 
     /// The prompt sent to API
     prompt: String,
@@ -309,7 +308,7 @@ enum Msg {
     UpdateIndexName(usize, usize, String),
     UpdatePropertyType(usize, usize, Property),
     UpdateIndexUnique(usize, usize, bool),
-    UpdateIndexSorting(usize, usize, usize, String),
+    // UpdateIndexSorting(usize, usize, usize, String),
     UpdatePropertyRequired(usize, usize, bool),
     UpdateSystemPropertiesRequired(usize, usize, bool),
     UpdatePropertyDescription(usize, usize, String),
@@ -357,8 +356,6 @@ enum Msg {
     Clear,
 
     // OpenAI
-    SubmitKey,
-    UpdateUserKey(String),
     UpdatePrompt(String),
     GenerateSchema,
     ReceiveSchema(Result<String, anyhow::Error>),
@@ -1065,11 +1062,11 @@ impl Model {
     }    
 
     fn view_index_properties(&self, doc_index: usize, index_index: usize, prop_index: usize, ctx: &yew::Context<Self>) -> Html {
-        let sorting_options = vec!["Ascending", "Descending"];
-        let mut current_sort = sorting_options[0];
-        if self.document_types[doc_index].indices[index_index].properties[prop_index].1.clone() == String::from("desc") {
-            current_sort = sorting_options[1];
-        }
+        // let sorting_options = vec!["Ascending", "Descending"];
+        // let mut current_sort = sorting_options[0];
+        // if self.document_types[doc_index].indices[index_index].properties[prop_index].1.clone() == String::from("desc") {
+        //     current_sort = sorting_options[1];
+        // }
         html!(
             <div class="forms-line number-block index">
                 <div class="form-headers">
@@ -1584,7 +1581,11 @@ impl Model {
             .filter_map(|error| {
                 if let ConsensusError::BasicError(inner) = error {
                     if let dpp::errors::consensus::basic::basic_error::BasicError::JsonSchemaError(json_error) = inner {
-                        Some(format!("JsonSchemaError: {}, Path: {}", json_error.error_summary().to_string(), json_error.instance_path().to_string()))
+                        if json_error.error_summary().contains("\"items\" is a required property") {
+                            Some(String::from("JsonSchemaError: \"array\" properties must specify \"byteArray\": true. In the dynamic form, just change the property from an array to a string and back to an array again, and resubmit."))
+                        } else {
+                            Some(format!("JsonSchemaError: {}, Path: {}", json_error.error_summary().to_string(), json_error.instance_path().to_string()))
+                        }
                     } else { 
                         Some(format!("{}", inner)) 
                     }
@@ -1607,15 +1608,13 @@ impl Component for Model {
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
-        let mut default_document_type = DocumentType::default();
+        let default_document_type = DocumentType::default();
         //default_document_type.properties.push(Property::default());
         Self {
             document_types: vec![default_document_type],
             json_object: Vec::new(),
             imported_json: String::new(),
             error_messages: Vec::new(),
-            user_key: String::new(),
-            key_valid: false,
             prompt: String::new(),
             schema: String::new(),
             history: Vec::new(),
@@ -1680,9 +1679,9 @@ impl Component for Model {
             Msg::UpdateIndexProperty(doc_index, index_index, prop_index, prop) => {
                 self.document_types[doc_index].indices[index_index].properties[prop_index].0 = prop;
             }
-            Msg::UpdateIndexSorting(doc_index, index_index, prop_index, sorting) => {
+            /* Msg::UpdateIndexSorting(doc_index, index_index, prop_index, sorting) => {
                 self.document_types[doc_index].indices[index_index].properties[prop_index].1 = sorting;
-            }
+            } */
             Msg::UpdatePropertyType(doc_index, prop_index, new_property) => {
                 let prop = &mut self.document_types[doc_index].properties[prop_index];
                 prop.data_type = new_property.data_type;
@@ -1908,20 +1907,10 @@ impl Component for Model {
             }
             
             // OpenAI
-            Msg::SubmitKey => {
-                if self.user_key.len() == 51 {
-                    self.key_valid = true;
-                }
-            },
-            Msg::UpdateUserKey(key) => {
-                self.user_key = key;
-            },
             Msg::UpdatePrompt(val) => {
                 self.prompt = val;
             },
             Msg::GenerateSchema => {
-
-                let user_key = self.user_key.clone();
 
                 // Prepend the appropriate default prompt
                 let prompt = if self.schema.is_empty() {
@@ -1942,7 +1931,7 @@ impl Component for Model {
 
                 let callback = ctx.link().callback(Msg::ReceiveSchema);
                 spawn_local(async move {
-                    let result = call_openai(&prompt, &user_key).await;
+                    let result = call_openai(&prompt).await;
                     callback.emit(result);
                 });
     
@@ -1980,17 +1969,7 @@ impl Component for Model {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         
-        let onsubmit = if self.key_valid {
-            ctx.link().callback(|event: SubmitEvent| {
-                event.prevent_default();
-                Msg::GenerateSchema
-            })
-        } else {
-            ctx.link().callback(|event: SubmitEvent| {
-                event.prevent_default();
-                Msg::SubmitKey
-            })
-        };        
+        let onsubmit = ctx.link().callback(|event: SubmitEvent| {event.prevent_default(); Msg::GenerateSchema});
 
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
@@ -2023,42 +2002,28 @@ impl Component for Model {
                             <div class="input-container_ai">
                                 //<h2>{"Generate a template contract using AI"}</h2>
                                 <p>{"Generate a data contract using AI here or by filling out the form below."}</p>
-                                { if !self.key_valid { html! {
-                                        <form onsubmit={onsubmit}>
-                                            <label class="padded-label">{"  OpenAI API key"}<a class="ai-link" href="https://platform.openai.com/account/api-keys" target="_blank"><img src="https://media.dash.org/wp-content/uploads/external-link.svg"/></a></label>
-                                            <div class="input-button-container_ai">
-                                            <input type="password"
-                                                //placeholder={"First, submit an OpenAI API key"}
-                                                value={self.user_key.clone()}
-                                                oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdateUserKey(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))} />
-                                                <button type="submit">{"Submit"}</button>
-                                            </div>
-                                        </form>
-                                    }} else { html! {
-                                        <form onsubmit={onsubmit}>
-                                            { if self.schema.is_empty() { 
-                                                html! { <label class="padded-label">{"  Project description"}</label> }
-                                              } else { html! { <label class="padded-label">{"  Adjustments to existing contract"}</label>
-                                                } 
-                                              }
-                                            }
-                                            <div class="input-button-container_ai">
-                                                <input
-                                                    /*placeholder={
-                                                        if self.schema.is_empty() {
-                                                            "Describe your project here"
-                                                        } else {
-                                                            "Describe any adjustments here"
-                                                        }
-                                                    }*/
-                                                    value={self.prompt.clone()}
-                                                    oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
-                                                />
-                                                <button type="submit">{"Generate"}</button>
-                                            </div>
-                                        </form>
-                                    }}
-                                }
+                                <form onsubmit={onsubmit}>
+                                    { if self.schema.is_empty() { 
+                                        html! { <label class="padded-label">{"  Project description"}</label> }
+                                        } else { html! { <label class="padded-label">{"  Adjustments to existing contract"}</label>
+                                        } 
+                                        }
+                                    }
+                                    <div class="input-button-container_ai">
+                                        <input
+                                            /*placeholder={
+                                                if self.schema.is_empty() {
+                                                    "Describe your project here"
+                                                } else {
+                                                    "Describe any adjustments here"
+                                                }
+                                            }*/
+                                            value={self.prompt.clone()}
+                                            oninput={ctx.link().callback(move |e: InputEvent| Msg::UpdatePrompt(e.target_dyn_into::<web_sys::HtmlInputElement>().unwrap().value()))}
+                                        />
+                                        <button type="submit">{"Generate"}</button>
+                                    </div>
+                                </form>
                             </div>
                         </div> 
                         {
@@ -2154,11 +2119,12 @@ impl Component for Model {
                         <p>{"© 2023 Dashpay"}</p>
                     </footer>
                 </body>
-        </main>
+            </main>
         }
     }
 }
 
+#[allow(dead_code)]
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
     yew::Renderer::<Model>::new().render();
