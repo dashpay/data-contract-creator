@@ -4,17 +4,17 @@
 //! They also have the ability to import existing contracts and edit them. 
 //! The schemas are validated against Dash Platform Protocol and error messages are provided if applicable.
 
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
 use yew::{prelude::*, html, Component, Html, Event, InputEvent, TargetCast};
-use serde_json::{json, Map, Value};
-use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
+use serde_json::{json, Map, Value, Number};
+use dpp::{self, consensus::ConsensusError, version::LATEST_PLATFORM_VERSION, ProtocolError};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement};
 #[allow(unused_imports)]
 use web_sys::console;
-
+extern crate bs58;
 
 // NOTE August 2023: This app originally used the OpenAI API text completions, but has now changed to chat completions.
 // The method of prepending a first prompt with information (a) and then prepending all subsequent prompts with information (b) can probably be replaced with something better.
@@ -1550,26 +1550,49 @@ impl Model {
     }
 
     fn validate(&mut self) -> Vec<String> {
+
+        // format the string and convert to serde_json value
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
-        let json_obj: serde_json::Value = serde_json::from_str(&new_s).unwrap();
-    
-        let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
-        let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
-        let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
-        let owner_id = Identifier::random();
-        let contract_result = factory
-            .create(owner_id, json_obj.clone().into(), None, None);
-    
-        match contract_result {
-            Ok(contract) => {
-                let results = contract.data_contract.validate(&contract.data_contract.to_cleaned_object().unwrap()).unwrap_or_default();
-                let errors = results.errors;
-                self.extract_basic_error_messages(&errors)
+        let first_obj: serde_json::Value = serde_json::from_str(&new_s).unwrap();
+        
+        // create higher-level object and put doc schemas as a field
+        let mut encapsulated_obj = serde_json::Map::new();
+        encapsulated_obj.insert("documentSchemas".to_string(), first_obj);
+        let mut json_obj = serde_json::Value::Object(encapsulated_obj);
+
+        // add other higher-level data contract fields, unimportant for the purposes of dashpay.io
+        if let serde_json::Value::Object(ref mut map) = json_obj {
+            map.insert("$format_version".to_string(), serde_json::Value::String("0".to_string()));
+            let bytes: [u8; 32] = [184, 75, 123, 56, 12, 175, 21, 36, 230, 242, 148, 68, 78, 109, 177, 96, 254, 5, 223, 7, 106, 117, 238, 129, 146, 33, 207, 40, 88, 15, 172, 50];
+            let encoded = bs58::encode(bytes).into_string();
+            map.insert("id".to_string(), serde_json::Value::String(encoded.clone()));
+            map.insert("version".to_string(), serde_json::Value::Number(Number::from(0)));
+            map.insert("ownerId".to_string(), serde_json::Value::String(encoded));
+        } else {
+            self.error_messages.push("json_obj not an object".to_string())
+        }
+        
+        console::log_1(&JsValue::from(json_obj.to_string()));
+
+        // create a DataContract object, validating with DPP in the process
+        let results = <dpp::prelude::DataContract as dpp::data_contract::conversion::value::v0::DataContractValueConversionMethodsV0>::from_value(
+            json_obj.into(),
+            true,
+            LATEST_PLATFORM_VERSION
+        );
+        match results {
+            Err(ProtocolError::ConsensusError(consensus_err)) => {
+                console::log_1(&JsValue::from_str("consensus error caught"));
+                self.extract_basic_error_messages(&[*consensus_err])
             },
-            Err(e) => {
-                self.error_messages_ai.push(format!("{}", e));
-                self.error_messages_ai.clone()
+            Err(error) => {
+                console::log_1(&JsValue::from_str(&format!("some error caught: {}", error)));
+                Vec::new()
+            }
+            _ => {
+                console::log_1(&JsValue::from_str("no error caught"));
+                Vec::new()
             }
         }
     }
