@@ -4,17 +4,19 @@
 //! They also have the ability to import existing contracts and edit them. 
 //! The schemas are validated against Dash Platform Protocol and error messages are provided if applicable.
 
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{collections::{HashMap, HashSet}, sync::RwLock};
 use serde::{Serialize, Deserialize};
 use yew::{prelude::*, html, Component, Html, Event, InputEvent, TargetCast};
 use serde_json::{json, Map, Value};
-use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
+use dpp::{self, consensus::ConsensusError, data_contract::{DataContractFactory, JsonValue}, prelude::Identifier, validation::json_schema_validator::JsonSchemaValidator, version::PlatformVersion, platform_value::Value as PlatformValue};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
-use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement};
+use web_sys::{Headers, HtmlSelectElement, Request, RequestInit, RequestMode, Response};
 #[allow(unused_imports)]
 use web_sys::console;
 
+use wasm_bindgen::JsCast;
+use anyhow::Result;
 
 // NOTE August 2023: This app originally used the OpenAI API text completions, but has now changed to chat completions.
 // The method of prepending a first prompt with information (a) and then prepending all subsequent prompts with information (b) can probably be replaced with something better.
@@ -77,8 +79,8 @@ Do not explain anything or return anything else other than a properly formatted 
 "#;
 
 /// Calls OpenAI
-pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
-    let params = serde_json::json!({
+pub async fn call_openai(prompt: &str, api_key: &str) -> Result<String, anyhow::Error> {
+    let params = json!({
         "model": "gpt-3.5-turbo-16k",
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 8000,
@@ -87,24 +89,22 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     let params = params.to_string();
 
     let mut opts = RequestInit::new();
-    let headers = web_sys::Headers::new().unwrap();
+    let headers = Headers::new().unwrap();
 
     headers.append("Content-Type", "application/json").unwrap();
+    headers.append("Authorization", &format!("Bearer {}", api_key)).unwrap();
 
     opts.method("POST");
     opts.headers(&headers);
     opts.body(Some(&JsValue::from_str(&params)));
     opts.mode(RequestMode::Cors);
 
-    let request = Request::new_with_str_and_init("https://22vazdmku2qz3prrn57elhdj2i0wyejr.lambda-url.us-west-2.on.aws/", &opts)
+    let request = Request::new_with_str_and_init("https://api.openai.com/v1/chat/completions", &opts)
         .map_err(|e| anyhow::anyhow!("Failed to create request: {:?}", e))?;
 
     let window = web_sys::window().ok_or_else(|| anyhow::anyhow!("Failed to obtain window object"))?;
     let response = JsFuture::from(window.fetch_with_request(&request)).await;
 
-    // console::log_1(&JsValue::from_str("Raw response received:"));
-    // console::log_1(&response.clone().unwrap());
-    
     let response = match response {
         Ok(resp) => resp,
         Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Fetch request failed".to_string()))),
@@ -115,36 +115,17 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
         Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to convert JsValue to Response".to_string()))),
     };
 
-    let text_future = match response.text() {
-        Ok(txt_future) => txt_future,
-        Err(_) => return Err(anyhow::anyhow!("Failed to read text from the response")),
-    };
-
-    let text_js = match JsFuture::from(text_future).await {
-        Ok(txt_js) => txt_js,
-        Err(err) => return Err(anyhow::anyhow!(err.as_string().unwrap_or("Failed to convert future to JsValue".to_string()))),
-    };
-
-    let text = match text_js.as_string() {
-        Some(txt) => txt,
-        None => return Err(anyhow::anyhow!("Failed to convert JsValue to String")),
-    };
-
-    // Log to console
-    // console::log_1(&text_js);
-
     if !response.ok() {
         let status = response.status();
-        let parsed_json: Result<serde_json::Value, _> = serde_json::from_str(&text);
-        let message = if let Ok(json) = parsed_json {
-            json.get("error").and_then(|e| e.get("message")).and_then(|m| m.as_str()).unwrap_or(&text).to_string()
-        } else {
-            text
-        };
-        return Err(anyhow::anyhow!("HTTP {} error from OpenAI: {}", status, message));
+        let text = JsFuture::from(response.text().unwrap()).await.unwrap().as_string().unwrap_or_else(|| "Unknown error".to_string());
+        return Err(anyhow::anyhow!("HTTP {} error from OpenAI: {}", status, text));
     }
-    
-    let json: serde_json::Value = serde_json::from_str(&text).unwrap();
+
+    let text_future = response.text().unwrap();
+    let text_js = JsFuture::from(text_future).await.map_err(|err| anyhow::anyhow!(err.as_string().unwrap_or("Failed to convert future to JsValue".to_string())))?;
+    let text = text_js.as_string().ok_or_else(|| anyhow::anyhow!("Failed to convert JsValue to String"))?;
+
+    let json: serde_json::Value = serde_json::from_str(&text).map_err(|_| anyhow::anyhow!("Failed to parse response JSON"))?;
     let schema_text = json["choices"][0]["message"]["content"].as_str().unwrap_or("");
 
     // Extract the JSON schema from the response
@@ -154,7 +135,6 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     match (start, end) {
         (Some(start), Some(end)) => {
             let schema_json = &schema_text[start..=end];
-            //console::log_1(&JsValue::from_str(schema_json));
             match serde_json::from_str::<serde_json::Value>(schema_json) {
                 Ok(_) => Ok(schema_json.to_string()),
                 Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON.")),
@@ -1552,21 +1532,36 @@ impl Model {
     fn validate(&mut self) -> Vec<String> {
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
-        let json_obj: serde_json::Value = serde_json::from_str(&new_s).unwrap();
-    
-        let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
-        let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
-        let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
+        let json_obj: JsonValue = serde_json::from_str(&new_s).unwrap();
+
+        // Convert `serde_json::Value` to `dpp::platform_value::Value`
+        let platform_value: PlatformValue = PlatformValue::from(json_obj);
+
+        let factory = DataContractFactory::new(PlatformVersion::latest().protocol_version)
+            .expect("Expected to create a data contract factory from the given protocol version");
         let owner_id = Identifier::random();
-        let contract_result = factory
-            .create(owner_id, json_obj.clone().into(), None, None);
-    
+
+        // Create data contract
+        let contract_result = factory.create(owner_id, u64::default(), platform_value, None, None);
+
         match contract_result {
             Ok(contract) => {
-                let results = contract.data_contract.validate(&contract.data_contract.to_cleaned_object().unwrap()).unwrap_or_default();
+                // Convert DataContract to JsonValue
+                let contract_json: JsonValue = serde_json::to_value(contract.data_contract()).unwrap();
+
+                // Create the validator
+                let validator = JsonSchemaValidator {
+                    validator: RwLock::new(None),
+                };
+
+                // Validate the data contract
+                let results = validator
+                    .validate(&contract_json, &PlatformVersion::latest())
+                    .unwrap();
+
                 let errors = results.errors;
                 self.extract_basic_error_messages(&errors)
-            },
+            }
             Err(e) => {
                 self.error_messages_ai.push(format!("{}", e));
                 self.error_messages_ai.clone()
@@ -1931,7 +1926,7 @@ impl Component for Model {
 
                 let callback = ctx.link().callback(Msg::ReceiveSchema);
                 spawn_local(async move {
-                    let result = call_openai(&prompt).await;
+                    let result = call_openai(&prompt, "api key here").await;
                     callback.emit(result);
                 });
     
