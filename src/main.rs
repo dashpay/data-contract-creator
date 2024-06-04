@@ -4,7 +4,7 @@
 //! They also have the ability to import existing contracts and edit them. 
 //! The schemas are validated against Dash Platform Protocol and error messages are provided if applicable.
 
-use std::{collections::{HashMap, HashSet}, sync::RwLock};
+use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
 use yew::{prelude::*, html, Component, Html, Event, InputEvent, TargetCast};
 use serde_json::{json, Map, Value};
@@ -1579,13 +1579,11 @@ impl Model {
                 let contract_json: JsonValue = serde_json::to_value(contract.data_contract().as_v0()).unwrap();
 
                 // Create the validator
-                let validator = JsonSchemaValidator {
-                    validator: RwLock::new(None),
-                };
+                let validator = JsonSchemaValidator::new_compiled(&contract_json, &PlatformVersion::latest()).expect("Expected to create a new JsonSchemaValidator given the contract schema");
 
                 // Validate the data contract
                 let results = validator
-                    .compile_and_validate(&contract_json, &contract_json, &PlatformVersion::latest())
+                    .validate(&contract_json, &PlatformVersion::latest())
                     .unwrap();
 
                 let errors = results.errors;
