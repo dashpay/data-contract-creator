@@ -3,6 +3,8 @@
 //! This web app allows users to generate data contract schemas using ChatGPT and a dynamic form. 
 //! They also have the ability to import existing contracts and edit them. 
 //! The schemas are validated against Dash Platform Protocol and error messages are provided if applicable.
+//! 
+//! LOCAL TESTING: Just make the two changes in the call_ai function, as specified in the in-code comments
 
 use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
@@ -17,10 +19,6 @@ use web_sys::console;
 
 use wasm_bindgen::JsCast;
 use anyhow::Result;
-
-// NOTE August 2023: This app originally used the OpenAI API text completions, but has now changed to chat completions.
-// The method of prepending a first prompt with information (a) and then prepending all subsequent prompts with information (b) can probably be replaced with something better.
-
 
 // Context prepended to the first user-input prompt, when creating a new contract
 const FIRST_PROMPT_PRE: &str = r#"
@@ -82,9 +80,9 @@ Do not explain anything or return anything else other than a properly formatted 
 /// Calls OpenAI
 pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     let params = serde_json::json!({
-        "model": "gpt-3.5-turbo-16k",
+        "model": "gpt-4o",
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 8000,
+        "max_tokens": 4096,
         "temperature": 0.2
     });
     let params = params.to_string();
@@ -93,20 +91,21 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     let headers = web_sys::Headers::new().unwrap();
 
     headers.append("Content-Type", "application/json").unwrap();
+    // LOCAL TESTING: Un-comment the following line and insert your API key
+    // headers.append("Authorization", &format!("Bearer {}", "API KEY HERE")).unwrap();
 
     opts.method("POST");
     opts.headers(&headers);
     opts.body(Some(&JsValue::from_str(&params)));
     opts.mode(RequestMode::Cors);
 
+    // LOCAL TESTING: Swap the following two lines
+    // let request = Request::new_with_str_and_init("https://api.openai.com/v1/chat/completions", &opts)
     let request = Request::new_with_str_and_init("https://22vazdmku2qz3prrn57elhdj2i0wyejr.lambda-url.us-west-2.on.aws/", &opts)
         .map_err(|e| anyhow::anyhow!("Failed to create request: {:?}", e))?;
 
     let window = web_sys::window().ok_or_else(|| anyhow::anyhow!("Failed to obtain window object"))?;
     let response = JsFuture::from(window.fetch_with_request(&request)).await;
-
-    // console::log_1(&JsValue::from_str("Raw response received:"));
-    // console::log_1(&response.clone().unwrap());
     
     let response = match response {
         Ok(resp) => resp,
@@ -133,9 +132,6 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
         None => return Err(anyhow::anyhow!("Failed to convert JsValue to String")),
     };
 
-    // Log to console
-    // console::log_1(&text_js);
-
     if !response.ok() {
         let status = response.status();
         let parsed_json: Result<serde_json::Value, _> = serde_json::from_str(&text);
@@ -157,7 +153,6 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     match (start, end) {
         (Some(start), Some(end)) => {
             let schema_json = &schema_text[start..=end];
-            //console::log_1(&JsValue::from_str(schema_json));
             match serde_json::from_str::<serde_json::Value>(schema_json) {
                 Ok(_) => Ok(schema_json.to_string()),
                 Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON.")),
@@ -1590,8 +1585,8 @@ impl Model {
                 self.extract_basic_error_messages(&errors)
             }
             Err(e) => {
-                self.error_messages_ai.push(format!("{}", e));
-                self.error_messages_ai.clone()
+                self.error_messages = vec![format!("{}", e)];
+                self.error_messages.clone()
             }
         }
     }
