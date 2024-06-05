@@ -8,13 +8,13 @@ edition = "2021"
 [dependencies]
 yew = {version="0.20.0", features = ["csr"]}
 serde = "1.0.164"
-serde_json = {version = "1.0.96", features = ["preserve_order"]}
+serde_json = {version = "1.0.117", features = ["preserve_order"]}
 web-sys = {version="0.3.63", features = ["HtmlSelectElement"]}
 wasm-logger = "0.2.0"
 wasm-bindgen = "0.2.86"
 wasm-bindgen-futures = "0.4.37"
 anyhow = "1.0.71"
-dpp = { git="https://github.com/pauldelucia/platform.git", package="dpp", default-features = false, features = ["cbor"] }
+dpp = { git = "https://github.com/dashpay/platform.git", rev = "c03a5f81d4f8c059e541d5d3202bc9fb438a7422", default-features = false, features = ["cbor", "factories", "validation"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

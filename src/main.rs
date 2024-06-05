@@ -3,22 +3,22 @@
 //! This web app allows users to generate data contract schemas using ChatGPT and a dynamic form. 
 //! They also have the ability to import existing contracts and edit them. 
 //! The schemas are validated against Dash Platform Protocol and error messages are provided if applicable.
+//! 
+//! LOCAL TESTING: Just make the two changes in the call_ai function, as specified in the in-code comments
 
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
 use yew::{prelude::*, html, Component, Html, Event, InputEvent, TargetCast};
 use serde_json::{json, Map, Value};
-use dpp::{self, consensus::ConsensusError, prelude::Identifier, Convertible};
+use dpp::{self, consensus::ConsensusError, data_contract::{DataContractFactory, JsonValue}, prelude::Identifier, validation::json_schema_validator::JsonSchemaValidator, version::PlatformVersion, platform_value::Value as PlatformValue};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
-use web_sys::{Request, RequestInit, RequestMode, Response, HtmlSelectElement};
+use web_sys::{HtmlSelectElement, Request, RequestInit, RequestMode, Response};
 #[allow(unused_imports)]
 use web_sys::console;
 
-
-// NOTE August 2023: This app originally used the OpenAI API text completions, but has now changed to chat completions.
-// The method of prepending a first prompt with information (a) and then prepending all subsequent prompts with information (b) can probably be replaced with something better.
-
+use wasm_bindgen::JsCast;
+use anyhow::Result;
 
 // Context prepended to the first user-input prompt, when creating a new contract
 const FIRST_PROMPT_PRE: &str = r#"
@@ -32,17 +32,18 @@ They must define at least one document type, where a document type defines a typ
 *Example*: 
 Here is an example of a data contract with one document type, "nft":
 
-{"nft":{"type":"object","properties":{"name":{"type":"string","description":"Name of the NFT token","maxLength":63},"description":{"type":"string","description":"Description of the NFT token","maxLength":256},"imageUrl":{"type":"string","description":"URL of the image associated with the NFT token","maxLength":2048,"format":"uri"},"imageHash":{"type":"array","description":"SHA256 hash of the bytes of the image specified by tokenImageUrl","byteArray":true,"minItems":32,"maxItems":32},"imageFingerprint":{"type":"array","description":"dHash the image specified by tokenImageUrl","byteArray":true,"minItems":8,"maxItems":8},"price":{"type":"number","description":"Price of the NFT token in Dash","minimum":0},"quantity":{"type":"integer","description":"Number of tokens in circulation","minimum":0},"metadata":{"type":"array","description":"Any additional metadata associated with the NFT token","byteArray":true,"minItems":0,"maxItems":2048}},"indices":[{"name":"price","properties":[{"price":"asc"}]},{"name":"quantity","properties":[{"quantity":"asc"}]},{"name":"priceAndQuantity","properties":[{"price":"asc"},{"quantity":"asc"}]}],"required":["name","price","quantity"],"additionalProperties":false}}
+{"nft":{"type":"object","properties":{"name":{"position":0,"type":"string","description":"Name of the NFT token","maxLength":63},"description":{"position":1,"type":"string","description":"Description of the NFT token","maxLength":256},"imageUrl":{"position":2,"type":"string","description":"URL of the image associated with the NFT token","maxLength":2048,"format":"uri"},"imageHash":{"position":3,"type":"array","description":"SHA256 hash of the bytes of the image specified by tokenImageUrl","byteArray":true,"minItems":32,"maxItems":32},"imageFingerprint":{"position":4,"type":"array","description":"dHash the image specified by tokenImageUrl","byteArray":true,"minItems":8,"maxItems":8},"price":{"position":5,"type":"number","description":"Price of the NFT token in Dash","minimum":0},"quantity":{"position":6,"type":"integer","description":"Number of tokens in circulation","minimum":0},"metadata":{"position":7,"type":"array","description":"Any additional metadata associated with the NFT token","byteArray":true,"minItems":0,"maxItems":2048}},"indices":[{"name":"price","properties":[{"price":"asc"}]},{"name":"quantity","properties":[{"quantity":"asc"}]},{"name":"priceAndQuantity","properties":[{"price":"asc"},{"quantity":"asc"}]}],"required":["name","price","quantity"],"additionalProperties":false}}
 
 While this example data contract only has one document type, data contracts should usually have more than one. For example, the example "nft" data contract could also have document types for "listing" and "transaction". Maybe the developer also wants to have user profiles, so they could include a "userProfile" document type.
 
-*Requirements*: 
-The following requirements must be met in Dash Platform data contracts: 
- - Indexes may only have "asc" sort order. 
- - All "string" properties that are used in indexes must specify "maxLength", which must be no more than 63. 
- - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255. 
- - All "array" properties must specify `"byteArray": true`. 
- - All "object" properties must define at least 1 property within themselves. 
+*Requirements*:
+The following requirements must be met in Dash Platform data contracts:
+ - Indexes may only have "asc" sort order.
+ - All "string" properties that are used in indexes must specify "maxLength", which must be no more than 63.
+ - All "array" properties that are used in indexes must specify "maxItems", and it must be less than or equal to 255.
+ - All "array" properties must specify `"byteArray": true`.
+ - All "object" properties must define at least 1 property within themselves.
+ - All properties must define a "position" field, which is a number starting at 0, incrementing for each property.
 
 *App description*: 
 Now I will give you a user prompt that describes the application that you will generate a data contract for.
@@ -79,9 +80,9 @@ Do not explain anything or return anything else other than a properly formatted 
 /// Calls OpenAI
 pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     let params = serde_json::json!({
-        "model": "gpt-3.5-turbo-16k",
+        "model": "gpt-4o",
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 8000,
+        "max_tokens": 4096,
         "temperature": 0.2
     });
     let params = params.to_string();
@@ -90,20 +91,21 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     let headers = web_sys::Headers::new().unwrap();
 
     headers.append("Content-Type", "application/json").unwrap();
+    // LOCAL TESTING: Un-comment the following line and insert your API key
+    // headers.append("Authorization", &format!("Bearer {}", "API KEY HERE")).unwrap();
 
     opts.method("POST");
     opts.headers(&headers);
     opts.body(Some(&JsValue::from_str(&params)));
     opts.mode(RequestMode::Cors);
 
+    // LOCAL TESTING: Swap the following two lines
+    // let request = Request::new_with_str_and_init("https://api.openai.com/v1/chat/completions", &opts)
     let request = Request::new_with_str_and_init("https://22vazdmku2qz3prrn57elhdj2i0wyejr.lambda-url.us-west-2.on.aws/", &opts)
         .map_err(|e| anyhow::anyhow!("Failed to create request: {:?}", e))?;
 
     let window = web_sys::window().ok_or_else(|| anyhow::anyhow!("Failed to obtain window object"))?;
     let response = JsFuture::from(window.fetch_with_request(&request)).await;
-
-    // console::log_1(&JsValue::from_str("Raw response received:"));
-    // console::log_1(&response.clone().unwrap());
     
     let response = match response {
         Ok(resp) => resp,
@@ -130,9 +132,6 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
         None => return Err(anyhow::anyhow!("Failed to convert JsValue to String")),
     };
 
-    // Log to console
-    // console::log_1(&text_js);
-
     if !response.ok() {
         let status = response.status();
         let parsed_json: Result<serde_json::Value, _> = serde_json::from_str(&text);
@@ -154,7 +153,6 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
     match (start, end) {
         (Some(start), Some(end)) => {
             let schema_json = &schema_text[start..=end];
-            //console::log_1(&JsValue::from_str(schema_json));
             match serde_json::from_str::<serde_json::Value>(schema_json) {
                 Ok(_) => Ok(schema_json.to_string()),
                 Err(_) => Err(anyhow::anyhow!("Extracted text is not valid JSON.")),
@@ -239,6 +237,7 @@ struct Property {
     name: String,
     data_type: DataType,
     required: bool,
+    position: u64,
     description: Option<String>,
     comment: Option<String>,
     min_length: Option<u32>,  // For String data type
@@ -1097,8 +1096,10 @@ impl Model {
         let mut json_arr = Vec::new();
         for doc_type in &mut self.document_types {
             let mut props_map = Map::new();
+            let mut position_index = 0;
             for prop in &mut doc_type.properties {
                 let mut prop_obj = Map::new();
+                prop_obj.insert("position".to_owned(), json!(position_index));
                 prop_obj.insert("type".to_owned(), json!(match prop.data_type {
                     DataType::String => "string",
                     DataType::Integer => "integer",
@@ -1169,6 +1170,7 @@ impl Model {
                         doc_type.required.retain(|x| x != &prop.name);
                     }
                 }
+                position_index += 1;
             }
             let mut indices_arr = Vec::new();
             for index in &doc_type.indices {
@@ -1234,8 +1236,10 @@ impl Model {
     fn generate_nested_properties(prop: &mut Property) -> Map<String, Value> {
         let mut rec_props_map = Map::new();
         if let Some(nested_props) = &mut prop.properties {
+            let mut position_index = 0;
             for rec_prop in nested_props.iter_mut() {
                 let mut rec_prop_obj = Map::new();
+                rec_prop_obj.insert("position".to_owned(), json!(position_index));
                 rec_prop_obj.insert("type".to_owned(), json!(match rec_prop.data_type {
                     DataType::String => "string",
                     DataType::Integer => "integer",
@@ -1303,13 +1307,13 @@ impl Model {
                     }
                 }
                 rec_props_map.insert(rec_prop.name.clone(), json!(rec_prop_obj));
+                position_index += 1;
             }
         }
         rec_props_map
     }
 
     fn parse_imported_json(&mut self) {
-
         // Parse the string into a HashMap
         let parsed_json: HashMap<String, Value> = serde_json::from_str(&self.imported_json).unwrap_or_default();
 
@@ -1552,24 +1556,37 @@ impl Model {
     fn validate(&mut self) -> Vec<String> {
         let s = &self.json_object.join(",");
         let new_s = format!("{{{}}}", s);
-        let json_obj: serde_json::Value = serde_json::from_str(&new_s).unwrap();
-    
-        let protocol_version_validator = dpp::version::ProtocolVersionValidator::default();
-        let data_contract_validator = dpp::data_contract::validation::data_contract_validator::DataContractValidator::new(Arc::new(protocol_version_validator));
-        let factory = dpp::data_contract::DataContractFactory::new(1, Arc::new(data_contract_validator));
+        let json_obj: JsonValue = serde_json::from_str(&new_s).unwrap();
+
+        // Convert `serde_json::Value` to `dpp::platform_value::Value`
+        let platform_value: PlatformValue = PlatformValue::from(json_obj);
+
+        let factory = DataContractFactory::new(PlatformVersion::latest().protocol_version)
+            .expect("Expected to create a data contract factory from the given protocol version");
         let owner_id = Identifier::random();
-        let contract_result = factory
-            .create(owner_id, json_obj.clone().into(), None, None);
-    
+
+        // Create data contract
+        let contract_result = factory.create(owner_id, u64::default(), platform_value, None, None);
+
         match contract_result {
             Ok(contract) => {
-                let results = contract.data_contract.validate(&contract.data_contract.to_cleaned_object().unwrap()).unwrap_or_default();
+                // Convert DataContract to JsonValue
+                let contract_json: JsonValue = serde_json::to_value(contract.data_contract().as_v0()).unwrap();
+
+                // Create the validator
+                let validator = JsonSchemaValidator::new_compiled(&contract_json, &PlatformVersion::latest()).expect("Expected to create a new JsonSchemaValidator given the contract schema");
+
+                // Validate the data contract
+                let results = validator
+                    .validate(&contract_json, &PlatformVersion::latest())
+                    .unwrap();
+
                 let errors = results.errors;
                 self.extract_basic_error_messages(&errors)
-            },
+            }
             Err(e) => {
-                self.error_messages_ai.push(format!("{}", e));
-                self.error_messages_ai.clone()
+                self.error_messages = vec![format!("{}", e)];
+                self.error_messages.clone()
             }
         }
     }
@@ -1761,6 +1778,7 @@ impl Component for Model {
                     name: String::new(),
                     data_type: DataType::String,
                     required: false,
+                    position: 0,
                     rec_required: Some(Vec::new()),
                     description: None,
                     comment: None,
