@@ -10,12 +10,10 @@ use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
 use yew::{prelude::*, html, Component, Html, Event, InputEvent, TargetCast};
 use serde_json::{json, Map, Value};
-use dpp::{self, consensus::ConsensusError, data_contract::{DataContractFactory, JsonValue}, prelude::Identifier, validation::json_schema_validator::JsonSchemaValidator, version::PlatformVersion, platform_value::Value as PlatformValue};
+use dpp::{self, consensus::ConsensusError, data_contract::{DataContractFactory, JsonValue}, platform_value::Value as PlatformValue, prelude::Identifier, util::json_value::JsonValueExt, validation::json_schema_validator::JsonSchemaValidator, version::PlatformVersion};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{HtmlSelectElement, Request, RequestInit, RequestMode, Response};
-#[allow(unused_imports)]
-use web_sys::console;
 
 use wasm_bindgen::JsCast;
 use anyhow::Result;
@@ -52,7 +50,7 @@ When creating the data contract, please:
  - Include descriptions for every document type and property. Be creative, extensive, and utilize multiple document types if possible. 
  - Include indexes for any properties that it makes sense for a useful app to index. More is better. 
  - Do not explain anything or return anything else other than a properly formatted data contract JSON schema. 
- - Double check that all requirements and requests above are met. Again, all "array" properties must specify `"byteArray": true`. 
+ - Double check that all requirements and requests above are met. Again, all "array" properties must specify `"byteArray": true`.
 
 App description: 
 
@@ -92,7 +90,7 @@ pub async fn call_openai(prompt: &str) -> Result<String, anyhow::Error> {
 
     headers.append("Content-Type", "application/json").unwrap();
     // LOCAL TESTING: Un-comment the following line and insert your API key
-    // headers.append("Authorization", &format!("Bearer {}", "API KEY HERE")).unwrap();
+    // headers.append("Authorization", &format!("Bearer {}", "API_KEY_HERE")).unwrap();
 
     opts.method("POST");
     opts.headers(&headers);
@@ -1571,7 +1569,10 @@ impl Model {
         match contract_result {
             Ok(contract) => {
                 // Convert DataContract to JsonValue
-                let contract_json: JsonValue = serde_json::to_value(contract.data_contract().as_v0()).unwrap();
+                let mut contract_json: JsonValue = serde_json::to_value(contract.data_contract().as_v1()).unwrap();
+
+                // Insert a blank description for the validator
+                contract_json.insert("description".to_string(), json!("")).map_err(|e| format!("Failed to insert description: {}", e)).unwrap();
 
                 // Create the validator
                 let validator = JsonSchemaValidator::new_compiled(&contract_json, &PlatformVersion::latest()).expect("Expected to create a new JsonSchemaValidator given the contract schema");
