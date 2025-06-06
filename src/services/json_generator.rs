@@ -1,5 +1,5 @@
 use crate::types::{DataType, DocumentType, Index, Property};
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 
 /// Service for generating JSON from internal data structures
 pub struct JsonGenerator;
@@ -32,33 +32,8 @@ impl JsonGenerator {
             doc_obj.insert("properties".to_string(), properties);
         }
 
-        // Add system properties if required
-        if let Some(properties) = doc_obj
-            .get_mut("properties")
-            .and_then(|p| p.as_object_mut())
-        {
-            if doc_type.created_at_required {
-                properties.insert(
-                    "$createdAt".to_string(),
-                    json!({
-                        "type": "integer",
-                        "minimum": 0,
-                        "description": "Timestamp of document creation"
-                    }),
-                );
-            }
-
-            if doc_type.updated_at_required {
-                properties.insert(
-                    "$updatedAt".to_string(),
-                    json!({
-                        "type": "integer",
-                        "minimum": 0,
-                        "description": "Timestamp of document last update"
-                    }),
-                );
-            }
-        }
+        // System properties are not added to properties object
+        // They exist at the platform level and are only referenced in required array
 
         // Generate indices
         if !doc_type.indices.is_empty() {
@@ -91,6 +66,31 @@ impl JsonGenerator {
             "additionalProperties".to_string(),
             Value::Bool(doc_type.additionalProperties),
         );
+
+        // Add description if present
+        if !doc_type.description.is_empty() {
+            doc_obj.insert("description".to_string(), Value::String(doc_type.description.clone()));
+        }
+
+        // Add keywords if present
+        if !doc_type.keywords.is_empty() {
+            // Split keywords by comma and trim whitespace
+            let keywords: Vec<String> = doc_type.keywords
+                .split(',')
+                .map(|k| k.trim().to_string())
+                .filter(|k| !k.is_empty())
+                .collect();
+            
+            if !keywords.is_empty() {
+                let keyword_values: Vec<Value> = keywords.into_iter().map(Value::String).collect();
+                doc_obj.insert("keywords".to_string(), Value::Array(keyword_values));
+            }
+        }
+
+        // Add comment if present (internal documentation)
+        if !doc_type.comment.is_empty() {
+            doc_obj.insert("$comment".to_string(), Value::String(doc_type.comment.clone()));
+        }
 
         Value::Object(doc_obj)
     }

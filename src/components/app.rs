@@ -41,6 +41,9 @@ pub struct App {
 
     /// Whether the compact JSON popup is visible
     show_compact_popup: bool,
+    
+    /// Track which property optional sections are expanded
+    pub expanded_property_options: std::collections::HashSet<(usize, usize)>,
 }
 
 /// Messages for app state updates
@@ -51,6 +54,8 @@ pub enum AppMsg {
     RemoveDocumentType(usize),
     UpdateDocumentTypeName(usize, String),
     UpdateDocumentTypeComment(usize, String),
+    UpdateDocumentTypeDescription(usize, String),
+    UpdateDocumentTypeKeywords(usize, String),
     UpdateDocumentTypeCreatedAt(usize, bool),
     UpdateDocumentTypeUpdatedAt(usize, bool),
     UpdateDocumentTypeAdditionalProperties(usize, bool),
@@ -104,6 +109,9 @@ pub enum AppMsg {
     ShowCompactPopup,
     HideCompactPopup,
     PopupContentClick, // No-op message for preventing popup close
+    
+    // Toggle optional fields visibility
+    TogglePropertyOptions(usize, usize),
 }
 
 impl Component for App {
@@ -123,6 +131,7 @@ impl Component for App {
             show_formatted: true,
             validation_requested: false,
             show_compact_popup: false,
+            expanded_property_options: std::collections::HashSet::new(),
         }
     }
 
@@ -153,6 +162,20 @@ impl Component for App {
             AppMsg::UpdateDocumentTypeComment(index, comment) => {
                 if let Some(doc_type) = self.document_types.get_mut(index) {
                     doc_type.comment = comment;
+                }
+                true
+            }
+
+            AppMsg::UpdateDocumentTypeDescription(index, description) => {
+                if let Some(doc_type) = self.document_types.get_mut(index) {
+                    doc_type.description = description;
+                }
+                true
+            }
+
+            AppMsg::UpdateDocumentTypeKeywords(index, keywords) => {
+                if let Some(doc_type) = self.document_types.get_mut(index) {
+                    doc_type.keywords = keywords;
                 }
                 true
             }
@@ -188,6 +211,38 @@ impl Component for App {
                     property.position = position;
                     doc_type.add_property(property);
                     self.update_json_output();
+                    
+                    // Scroll to show the new property
+                    if let Some(window) = web_sys::window() {
+                        let document = window.document().unwrap();
+                        let closure = wasm_bindgen::closure::Closure::once(Box::new(move || {
+                            if let Ok(elements) = document.query_selector_all(".property-section") {
+                                let length = elements.length();
+                                if length > 0 {
+                                    if let Some(last_element) = elements.item(length - 1) {
+                                        if let Ok(element) = last_element.dyn_into::<web_sys::HtmlElement>() {
+                                            // Scroll element into view
+                                            element.scroll_into_view_with_bool(true);
+                                            
+                                            // Then adjust scroll position to account for sticky header
+                                            if let Some(window_inner) = web_sys::window() {
+                                                let current_scroll = window_inner.scroll_y().unwrap_or(0.0);
+                                                // Scroll up by 100px to ensure property is visible below sticky header
+                                                window_inner.scroll_to_with_x_and_y(0.0, current_scroll - 100.0);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }) as Box<dyn FnOnce()>);
+                        
+                        window.set_timeout_with_callback_and_timeout_and_arguments_0(
+                            closure.as_ref().unchecked_ref(),
+                            100
+                        ).unwrap();
+                        
+                        closure.forget();
+                    }
                 }
                 true
             }
@@ -330,6 +385,38 @@ impl Component for App {
                 if let Some(doc_type) = self.document_types.get_mut(doc_index) {
                     doc_type.add_index(Index::default());
                     self.update_json_output();
+                    
+                    // Scroll to show the new index
+                    if let Some(window) = web_sys::window() {
+                        let document = window.document().unwrap();
+                        let closure = wasm_bindgen::closure::Closure::once(Box::new(move || {
+                            if let Ok(elements) = document.query_selector_all(".index-section") {
+                                let length = elements.length();
+                                if length > 0 {
+                                    if let Some(last_element) = elements.item(length - 1) {
+                                        if let Ok(element) = last_element.dyn_into::<web_sys::HtmlElement>() {
+                                            // Scroll element into view
+                                            element.scroll_into_view_with_bool(true);
+                                            
+                                            // Then adjust scroll position to account for sticky header
+                                            if let Some(window_inner) = web_sys::window() {
+                                                let current_scroll = window_inner.scroll_y().unwrap_or(0.0);
+                                                // Scroll up by 100px to ensure index is visible below sticky header
+                                                window_inner.scroll_to_with_x_and_y(0.0, current_scroll - 100.0);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }) as Box<dyn FnOnce()>);
+                        
+                        window.set_timeout_with_callback_and_timeout_and_arguments_0(
+                            closure.as_ref().unchecked_ref(),
+                            100
+                        ).unwrap();
+                        
+                        closure.forget();
+                    }
                 }
                 true
             }
@@ -532,6 +619,16 @@ impl Component for App {
             AppMsg::PopupContentClick => {
                 // No-op: prevents popup from closing when clicking inside content
                 false
+            }
+            
+            AppMsg::TogglePropertyOptions(doc_index, prop_index) => {
+                let key = (doc_index, prop_index);
+                if self.expanded_property_options.contains(&key) {
+                    self.expanded_property_options.remove(&key);
+                } else {
+                    self.expanded_property_options.insert(key);
+                }
+                true
             }
         }
     }

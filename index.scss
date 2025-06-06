@@ -134,15 +134,123 @@ input{
   position: absolute;
 }
 
+.property-section, .index-section {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  // Animate new properties/indices
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Optional fields dropdown styles
+.optional-fields-section {
+  margin-top: 20px;
+}
+
+.optional-fields-toggle {
+  background: none;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #444544;
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(0, 141, 228, 0.08);
+  }
+  
+  span {
+    margin-right: 8px;
+    transition: transform 0.2s ease;
+    font-size: 12px;
+    
+    &.arrow-down {
+      transform: rotate(90deg);
+    }
+    
+    &.arrow-right {
+      transform: rotate(0deg);
+    }
+  }
+}
+
+.optional-fields-content {
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 10px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
 .properties-block {
   display: flex;
   justify-content: space-between;
   background: #F5F6F7;
   align-items: center;
   padding: 0 10px;
-  margin: 15px 0;
+  margin: 0 0 15px 0;
   border-radius: 8px;
   font-weight: 600;
+  
+  .name-input-header {
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 10px 0;
+    flex: 1;
+    color: #1D1D1F;
+    
+    &:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+      padding: 10px;
+    }
+    
+    &::placeholder {
+      color: #b6b6b6;
+      font-weight: 400;
+      font-style: italic;
+    }
+  }
 } 
 p.prop-text{
   margin: 10px 0 20px;
@@ -231,12 +339,34 @@ p.prop-text{
   padding-top: 10px;
   padding-bottom: 10px;
   margin-bottom: 10px;
+  
+  .doc-name-input {
+    background: transparent;
+    border: none;
+    font-size: 28px;
+    font-weight: 700;
+    padding: 5px;
+    flex: 1;
+    color: #1D1D1F;
+    
+    &:focus {
+      outline: none;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 4px;
+      padding: 5px 10px;
+    }
+    
+    &::placeholder {
+      color: #b6b6b6;
+      font-weight: 400;
+      font-style: italic;
+    }
+  }
 }
 .doc-section {
   margin: 0 0 20px;
 }
 .doc-content {
-  overflow: auto;
   flex: 1;
 }
 .forms-line.min.index {
@@ -593,6 +723,28 @@ span.clear {
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 8px;
   padding: 12px;
+}
+
+.textarea-description {
+  width: 95%;
+  height: 80px;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: $font-family;
+  font-size: 14px;
+  resize: vertical;
+  margin-top: 10px;
+  
+  &:focus {
+    outline: none;
+    border-color: $light-blue;
+  }
+  
+  &::placeholder {
+    color: #b6b6b6;
+    font-style: italic;
+  }
 }
 
 .textarea-no-whitespace {

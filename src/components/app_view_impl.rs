@@ -2,9 +2,10 @@
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
+use yew::events::Event;
 
 use super::app::{App, AppMsg};
-use crate::types::{DataType, DocumentType, Index, Property};
+use crate::types::DataType;
 
 impl App {
     pub fn view_full_form_section(&self, ctx: &Context<Self>) -> Html {
@@ -32,13 +33,17 @@ impl App {
             <>
                 <div class="input-container">
                     <div class="doc-block">
-                        <h2>
-                            { if !doc_type.name.is_empty() {
-                                format!("\"{}\"", doc_type.name)
-                            } else {
-                                format!("Document Type {}", index + 1)
-                            }}
-                        </h2>
+                        <input
+                            class="doc-name-input"
+                            type="text"
+                            placeholder="Enter document type name"
+                            value={doc_type.name.clone()}
+                            oninput={ctx.link().callback(move |e: InputEvent| {
+                                let target = e.target().expect("Event should have target");
+                                let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                                AppMsg::UpdateDocumentTypeName(index, input.value())
+                            })}
+                        />
                         <button
                             class="button remove"
                             onclick={ctx.link().callback(move |_| AppMsg::RemoveDocumentType(index))}
@@ -48,18 +53,6 @@ impl App {
                     </div>
                     
                     <div class="doc-content">
-                        <div class="doc-section">
-                            <label>{ "Name" }</label>
-                            <input
-                                type="text"
-                                value={doc_type.name.clone()}
-                                oninput={ctx.link().callback(move |e: InputEvent| {
-                                    let target = e.target().expect("Event should have target");
-                                    let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
-                                    AppMsg::UpdateDocumentTypeName(index, input.value())
-                                })}
-                            />
-                        </div>
 
                         <div>
                         <div class="form-line">
@@ -127,9 +120,38 @@ impl App {
                     </div>
 
                     <div>
+                        <h3>{ "Description" }</h3>
+                        <textarea
+                            class="textarea-description"
+                            placeholder="Describe what this document type represents..."
+                            value={doc_type.description.clone()}
+                            oninput={ctx.link().callback(move |e: InputEvent| {
+                                let target = e.target().expect("Event should have target");
+                                let textarea = target.dyn_into::<web_sys::HtmlTextAreaElement>().expect("Target should be textarea element");
+                                AppMsg::UpdateDocumentTypeDescription(index, textarea.value())
+                            })}
+                        ></textarea>
+                    </div>
+
+                    <div>
+                        <h3>{ "Keywords" }</h3>
+                        <input
+                            type="text2"
+                            placeholder="Enter keywords separated by commas..."
+                            value={doc_type.keywords.clone()}
+                            oninput={ctx.link().callback(move |e: InputEvent| {
+                                let target = e.target().expect("Event should have target");
+                                let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                                AppMsg::UpdateDocumentTypeKeywords(index, input.value())
+                            })}
+                        />
+                    </div>
+
+                    <div>
                         <h3>{ "Comment" }</h3>
                         <input
                             type="text2"
+                            placeholder="Internal comment for developers..."
                             value={doc_type.comment.clone()}
                             oninput={ctx.link().callback(move |e: InputEvent| {
                                 let target = e.target().expect("Event should have target");
@@ -148,18 +170,30 @@ impl App {
     fn view_property_full(&self, ctx: &Context<Self>, doc_index: usize, prop_index: usize) -> Html {
         let property = &self.document_types[doc_index].properties[prop_index];
         let data_type_options = vec!["String", "Integer", "Array", "Object", "Number", "Boolean"];
-        let selected_data_type = property.data_type.as_str();
+        let selected_data_type = match property.data_type {
+            DataType::String => "String",
+            DataType::Integer => "Integer",
+            DataType::Array => "Array",
+            DataType::Object => "Object",
+            DataType::Number => "Number",
+            DataType::Boolean => "Boolean",
+        };
+        let is_expanded = self.expanded_property_options.contains(&(doc_index, prop_index));
 
         html! {
-            <>
+            <div class="property-section">
                 <div class="properties-block">
-                    <p>
-                        { if !property.name.is_empty() {
-                            format!("\"{}\"", property.name)
-                        } else {
-                            format!("Property {}", prop_index + 1)
-                        }}
-                    </p>
+                    <input
+                        class="name-input-header"
+                        type="text"
+                        placeholder="Enter property name"
+                        value={property.name.clone()}
+                        oninput={ctx.link().callback(move |e: InputEvent| {
+                            let target = e.target().expect("Event should have target");
+                            let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                            AppMsg::UpdatePropertyName(doc_index, prop_index, input.value())
+                        })}
+                    />
                     <button
                         class="button remove"
                         onclick={ctx.link().callback(move |_| AppMsg::RemoveProperty(doc_index, prop_index))}
@@ -169,19 +203,6 @@ impl App {
                 </div>
 
                 <div class="forms-line-names">
-                    <div class="form-headers">
-                        <label>{ "Name" }</label>
-                        <input
-                            type="text3"
-                            value={property.name.clone()}
-                            oninput={ctx.link().callback(move |e: InputEvent| {
-                                let target = e.target().expect("Event should have target");
-                                let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
-                                AppMsg::UpdatePropertyName(doc_index, prop_index, input.value())
-                            })}
-                        />
-                    </div>
-
                     <div class="form-headers-type">
                         <label>{ "Type" }</label>
                         <select
@@ -224,50 +245,99 @@ impl App {
                     </div>
                 </div>
 
-                <h4>
-                    { if property.data_type != DataType::Object {
-                        if !property.name.is_empty() {
-                            format!("\"{}\" property optional fields", property.name)
-                        } else {
-                            format!("Property {} optional fields", prop_index + 1)
-                        }
-                    } else {
-                        "".to_string()
-                    }}
-                </h4>
+                { if property.data_type != DataType::Object {
+                    html! {
+                        <div class="optional-fields-section">
+                            <button 
+                                class="optional-fields-toggle"
+                                onclick={ctx.link().callback(move |_| AppMsg::TogglePropertyOptions(doc_index, prop_index))}
+                            >
+                                <span class={if is_expanded { "arrow-down" } else { "arrow-right" }}>{ "▶" }</span>
+                                { "Optional fields" }
+                            </button>
+                            
+                            { if is_expanded {
+                                html! {
+                                    <div class="optional-fields-content">
+                                        { self.render_additional_properties(ctx, doc_index, prop_index) }
+                                        
+                                        <div class="forms-line">
+                                            <label>{ "Description " }</label>
+                                            <input
+                                                type="text3"
+                                                value={property.description.clone().unwrap_or_default()}
+                                                oninput={ctx.link().callback(move |e: InputEvent| {
+                                                    let target = e.target().expect("Event should have target");
+                                                    let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                                                    AppMsg::UpdatePropertyDescription(doc_index, prop_index, input.value())
+                                                })}
+                                            />
+                                        </div>
 
-                <div class="forms-line">
-                    { self.render_additional_properties(ctx, doc_index, prop_index) }
+                                        <div class="forms-line">
+                                            <label>{ "Comment " }</label>
+                                            <input
+                                                type="text3"
+                                                value={property.comment.clone().unwrap_or_default()}
+                                                oninput={ctx.link().callback(move |e: InputEvent| {
+                                                    let target = e.target().expect("Event should have target");
+                                                    let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                                                    // Note: We don't have UpdatePropertyComment in our AppMsg, so this is a no-op for now
+                                                    AppMsg::UpdatePropertyDescription(doc_index, prop_index, input.value())
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
+                                }
+                            } else {
+                                html! {}
+                            }}
+                        </div>
+                    }
+                } else {
+                    html! {
+                        <>
+                            <h4>
+                                { if !property.name.is_empty() {
+                                    format!("{} property optional fields", property.name)
+                                } else {
+                                    format!("Property {} optional fields", prop_index + 1)
+                                }}
+                            </h4>
+                            <div class="forms-line">
+                                { self.render_additional_properties(ctx, doc_index, prop_index) }
+                                
+                                <div class="forms-line">
+                                    <label>{ "Description " }</label>
+                                    <input
+                                        type="text3"
+                                        value={property.description.clone().unwrap_or_default()}
+                                        oninput={ctx.link().callback(move |e: InputEvent| {
+                                            let target = e.target().expect("Event should have target");
+                                            let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                                            AppMsg::UpdatePropertyDescription(doc_index, prop_index, input.value())
+                                        })}
+                                    />
+                                </div>
 
-                    <div class="forms-line">
-                        <label>{ "Description " }</label>
-                        <input
-                            type="text3"
-                            value={property.description.clone().unwrap_or_default()}
-                            oninput={ctx.link().callback(move |e: InputEvent| {
-                                let target = e.target().expect("Event should have target");
-                                let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
-                                AppMsg::UpdatePropertyDescription(doc_index, prop_index, input.value())
-                            })}
-                        />
-                    </div>
-
-                    <div class="forms-line">
-                        <label>{ "Comment " }</label>
-                        <input
-                            type="text3"
-                            value={property.comment.clone().unwrap_or_default()}
-                            oninput={ctx.link().callback(move |e: InputEvent| {
-                                let target = e.target().expect("Event should have target");
-                                let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
-                                // Note: We don't have UpdatePropertyComment in our AppMsg, so this is a no-op for now
-                                AppMsg::UpdatePropertyDescription(doc_index, prop_index, input.value())
-                            })}
-                        />
-                    </div>
-                    <p></p>
-                </div>
-            </>
+                                <div class="forms-line">
+                                    <label>{ "Comment " }</label>
+                                    <input
+                                        type="text3"
+                                        value={property.comment.clone().unwrap_or_default()}
+                                        oninput={ctx.link().callback(move |e: InputEvent| {
+                                            let target = e.target().expect("Event should have target");
+                                            let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                                            AppMsg::UpdatePropertyDescription(doc_index, prop_index, input.value())
+                                        })}
+                                    />
+                                </div>
+                                <p></p>
+                            </div>
+                        </>
+                    }
+                }}
+            </div>
         }
     }
 
@@ -410,7 +480,7 @@ impl App {
                 <>
                     <h4 class="black">
                         { if !property.name.is_empty() {
-                            format!("\"{}\" inner properties", property.name)
+                            format!("{} inner properties", property.name)
                         } else {
                             format!("Property {} inner properties", prop_index + 1)
                         }}
@@ -423,7 +493,7 @@ impl App {
                     </div>
                     <h4>
                         { if !property.name.is_empty() {
-                            format!("\"{}\" property optional fields", property.name)
+                            format!("{} property optional fields", property.name)
                         } else {
                             format!("Property {} optional fields", prop_index + 1)
                         }}
@@ -457,28 +527,28 @@ impl App {
         let index = &self.document_types[doc_index].indices[index_index];
 
         html! {
-            <>
+            <div class="index-section">
+                <div class="properties-block">
+                    <input
+                        class="name-input-header"
+                        type="text"
+                        placeholder="Enter index name"
+                        value={index.name.clone()}
+                        oninput={ctx.link().callback(move |e: InputEvent| {
+                            let target = e.target().expect("Event should have target");
+                            let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
+                            AppMsg::UpdateIndexName(doc_index, index_index, input.value())
+                        })}
+                    />
+                    <button
+                        class="button remove"
+                        onclick={ctx.link().callback(move |_| AppMsg::RemoveIndex(doc_index, index_index))}
+                    >
+                        <img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/>
+                    </button>
+                </div>
+                
                 <div class="forms-line-names">
-                    <div class="form-headers">
-                        <label>
-                            <b>
-                                { if !index.name.is_empty() {
-                                    format!("\"{}\" index", index.name)
-                                } else {
-                                    format!("Index {} name", index_index + 1)
-                                }}
-                            </b>
-                        </label>
-                        <input
-                            type="text3"
-                            value={index.name.clone()}
-                            oninput={ctx.link().callback(move |e: InputEvent| {
-                                let target = e.target().expect("Event should have target");
-                                let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
-                                AppMsg::UpdateIndexName(doc_index, index_index, input.value())
-                            })}
-                        />
-                    </div>
                     <div class="form-headers checkbox-block">
                         <label>{ "Unique" }</label>
                         <label class="container-checkbox">
@@ -494,20 +564,12 @@ impl App {
                             <span class="checkmark"></span>
                         </label>
                     </div>
-                    <div class="form-headers-remove">
-                        <button
-                            class="button remove"
-                            onclick={ctx.link().callback(move |_| AppMsg::RemoveIndex(doc_index, index_index))}
-                        >
-                            <img src="https://media.dash.org/wp-content/uploads/trash-icon.svg"/>
-                        </button>
-                    </div>
                 </div>
 
                 <div class="forms-line">
                     <h4 class="black">
                         { if !index.name.is_empty() {
-                            format!("\"{}\" index properties", index.name)
+                            format!("{} index properties", index.name)
                         } else {
                             format!("Index {} properties", index_index + 1)
                         }}
@@ -529,7 +591,7 @@ impl App {
                     </button>
                 </div>
                 <p></p>
-            </>
+            </div>
         }
     }
 
@@ -540,28 +602,59 @@ impl App {
         index_index: usize,
         prop_index: usize,
     ) -> Html {
-        let index_prop =
-            &self.document_types[doc_index].indices[index_index].properties[prop_index];
+        let index = &self.document_types[doc_index].indices[index_index];
+        let index_prop = &index.properties[prop_index];
+        
+        // Check if the index has a name
+        let has_index_name = !index.name.is_empty();
+        
+        // Get user-defined properties from the current document type
+        let doc_type = &self.document_types[doc_index];
+        let mut property_options: Vec<String> = doc_type.properties.iter()
+            .filter(|p| !p.name.is_empty())
+            .map(|p| p.name.clone())
+            .collect();
+        
+        // Add system properties
+        property_options.push("$ownerId".to_string());
+        property_options.push("$createdAt".to_string());
+        property_options.push("$updatedAt".to_string());
+        
+        let selected_value = index_prop.field().to_string();
 
         html! {
             <div class="forms-line number-block index">
                 <div class="form-headers">
-                    <p>
-                        { if !index_prop.field().is_empty() {
-                            format!("\"{}\"", index_prop.field())
-                        } else {
-                            format!("Index {} property {} name", index_index + 1, prop_index + 1)
-                        }}
-                    </p>
-                    <input
-                        type="text3"
-                        value={index_prop.field().to_string()}
-                        oninput={ctx.link().callback(move |e: InputEvent| {
-                            let target = e.target().expect("Event should have target");
-                            let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
-                            AppMsg::UpdateIndexPropertyField(doc_index, index_index, prop_index, input.value())
-                        })}
-                    />
+                    { if has_index_name {
+                        html! {
+                            <select
+                                value={selected_value.clone()}
+                                onchange={ctx.link().callback(move |e: Event| {
+                                    let target = e.target().expect("Event should have target");
+                                    let select = target.dyn_into::<HtmlSelectElement>().expect("Target should be select element");
+                                    AppMsg::UpdateIndexPropertyField(doc_index, index_index, prop_index, select.value())
+                                })}
+                            >
+                                <option value="" selected={selected_value.is_empty()}>
+                                    { "Select property..." }
+                                </option>
+                                { for property_options.iter().map(|prop| {
+                                    let is_selected = &selected_value == prop;
+                                    html! {
+                                        <option value={prop.clone()} selected={is_selected}>
+                                            { prop }
+                                        </option>
+                                    }
+                                }) }
+                            </select>
+                        }
+                    } else {
+                        html! {
+                            <select disabled=true>
+                                <option>{ "Enter index name first" }</option>
+                            </select>
+                        }
+                    }}
                 </div>
             </div>
         }

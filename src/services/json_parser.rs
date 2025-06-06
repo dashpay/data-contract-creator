@@ -56,6 +56,26 @@ impl JsonParser {
             doc_type.additionalProperties = additional_props.as_bool().unwrap_or(false);
         }
 
+        // Parse description
+        if let Some(description) = doc_obj.get("description").and_then(|v| v.as_str()) {
+            doc_type.description = description.to_string();
+        }
+
+        // Parse keywords
+        if let Some(keywords) = doc_obj.get("keywords").and_then(|v| v.as_array()) {
+            let keyword_strings: Vec<String> = keywords
+                .iter()
+                .filter_map(|v| v.as_str())
+                .map(|s| s.to_string())
+                .collect();
+            doc_type.keywords = keyword_strings.join(", ");
+        }
+
+        // Parse comment
+        if let Some(comment) = doc_obj.get("$comment").and_then(|v| v.as_str()) {
+            doc_type.comment = comment.to_string();
+        }
+
         // Update required flags for properties
         for property in &mut doc_type.properties {
             property.required = doc_type.required.contains(&property.name);

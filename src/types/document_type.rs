@@ -13,6 +13,8 @@ pub struct DocumentType {
     pub updated_at_required: bool,
     pub additionalProperties: bool,
     pub comment: String,
+    pub description: String,
+    pub keywords: String,
 }
 
 impl Default for DocumentType {
@@ -26,6 +28,8 @@ impl Default for DocumentType {
             updated_at_required: false,
             additionalProperties: false,
             comment: String::new(),
+            description: String::new(),
+            keywords: String::new(),
         }
     }
 }
