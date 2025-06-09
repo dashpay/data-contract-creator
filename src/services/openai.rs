@@ -37,7 +37,8 @@ The following requirements must be met in Dash Platform data contracts:
 Now I will give you a user prompt that describes the application that you will generate a data contract for.
 
 When creating the data contract, please:
- - Include descriptions for every document type and property. Be creative, extensive, and utilize multiple document types if possible. 
+ - Include descriptions for every document type and property. Be creative, extensive, and utilize multiple document types if possible.
+ - Include both "description" and "comment" fields for every document type (at the same level as "type", "properties", etc.).
  - Include indexes for any properties that it makes sense for a useful app to index. More is better. 
  - Do not explain anything or return anything else other than a properly formatted data contract JSON schema. 
  - Double check that all requirements and requests above are met. Again, all "array" properties must specify `"byteArray": true`.
