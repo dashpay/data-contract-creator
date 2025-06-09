@@ -15,6 +15,17 @@ $font-family: 'Inter', sans-serif;
 // Import fonts
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+// Base reset for consistent sizing
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 
 /* Layout*/
 main {
@@ -309,7 +320,7 @@ p.prop-text{
   width: 100%;
 }
 .column-text {
-  margin: 20px 0;
+  margin: 20px 0 40px 0;
   padding: 10px 40px 10px 20px;
   display: flex;
   justify-content: flex-start;
@@ -637,6 +648,11 @@ span.clear {
   flex-direction: column;
   position: relative;
 }
+
+.column-right .input-container {
+  padding-top: 20px;
+}
+
 .remove-text-button {
   width: 100%;
   display: flex;
@@ -678,7 +694,7 @@ span.clear {
 }
 .column-right {
   position: sticky;
-  top: 20px;
+  top: 10px;
   align-self: flex-start;
 }
 .column-left{
