@@ -104,6 +104,7 @@ pub enum AppMsg {
     RemoveIndex(usize, usize),
     UpdateIndexName(usize, usize, String),
     UpdateIndexUnique(usize, usize, bool),
+    ToggleIndexUnique(usize, usize),
     AddIndexProperty(usize, usize),
     RemoveIndexProperty(usize, usize, usize),
     UpdateIndexPropertyField(usize, usize, usize, String),
@@ -596,6 +597,14 @@ impl Component for App {
             AppMsg::UpdateIndexUnique(doc_index, index_index, unique) => {
                 if let Some(index) = self.get_index_mut(doc_index, index_index) {
                     index.unique = unique;
+                    self.update_json_output();
+                }
+                true
+            }
+
+            AppMsg::ToggleIndexUnique(doc_index, index_index) => {
+                if let Some(index) = self.get_index_mut(doc_index, index_index) {
+                    index.unique = !index.unique;
                     self.update_json_output();
                 }
                 true

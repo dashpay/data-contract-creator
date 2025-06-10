@@ -616,6 +616,11 @@ button.button.remove-text {
   //margin-top: 5px;
   //position: relative;
   width: 75px;
+  
+  // Ensure checkbox works properly in index section
+  .container-checkbox {
+    margin-bottom: 0;
+  }
 }
 .button-clear {
   border: none;

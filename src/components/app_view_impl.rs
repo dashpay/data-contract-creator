@@ -697,10 +697,9 @@ impl App {
                             <input
                                 type="checkbox"
                                 checked={index.unique}
-                                onchange={ctx.link().callback(move |e: Event| {
-                                    let target = e.target().expect("Event should have target");
-                                    let input = target.dyn_into::<HtmlInputElement>().expect("Target should be input element");
-                                    AppMsg::UpdateIndexUnique(doc_index, index_index, input.checked())
+                                onclick={ctx.link().callback(move |e: MouseEvent| {
+                                    e.stop_propagation();
+                                    AppMsg::ToggleIndexUnique(doc_index, index_index)
                                 })}
                             />
                             <span class="checkmark"></span>
