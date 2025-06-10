@@ -211,6 +211,18 @@ impl JsonGenerator {
             if !nested_props.is_empty() {
                 let nested_properties = Self::generate_properties(nested_props);
                 prop_obj.insert("properties".to_string(), nested_properties);
+                
+                // Generate required array for nested properties
+                let required: Vec<String> = nested_props
+                    .iter()
+                    .filter(|p| p.required && !p.name.is_empty())
+                    .map(|p| p.name.clone())
+                    .collect();
+                    
+                if !required.is_empty() {
+                    let required_values: Vec<Value> = required.into_iter().map(Value::String).collect();
+                    prop_obj.insert("required".to_string(), Value::Array(required_values));
+                }
             }
         }
 

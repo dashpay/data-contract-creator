@@ -223,7 +223,16 @@ impl JsonParser {
         prop_obj: &serde_json::Map<String, Value>,
     ) -> Result<(), String> {
         if let Some(nested_props) = prop_obj.get("properties") {
-            let nested_properties = Self::parse_properties(nested_props)?;
+            let mut nested_properties = Self::parse_properties(nested_props)?;
+            
+            // Update required flags for nested properties if there's a required array
+            if let Some(required) = prop_obj.get("required") {
+                let required_list = Self::parse_required_array(required)?;
+                for nested_prop in &mut nested_properties {
+                    nested_prop.required = required_list.contains(&nested_prop.name);
+                }
+            }
+            
             property.properties = Some(Box::new(nested_properties));
         }
 

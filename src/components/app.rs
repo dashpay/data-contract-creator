@@ -44,6 +44,12 @@ pub struct App {
     
     /// Track which property optional sections are expanded
     pub expanded_property_options: std::collections::HashSet<(usize, usize)>,
+    
+    /// Track which nested property optional sections are expanded
+    pub expanded_nested_property_options: std::collections::HashSet<(usize, usize, Vec<usize>)>,
+    
+    /// Track which info tooltip is shown (document type index)
+    pub shown_info_tooltip: Option<usize>,
 }
 
 /// Messages for app state updates
@@ -78,6 +84,20 @@ pub enum AppMsg {
     UpdatePropertyMinItems(usize, usize, String),
     UpdatePropertyMaxItems(usize, usize, String),
     UpdatePropertyContentMediaType(usize, usize, String),
+    
+    // Nested property operations (doc_index, prop_index, nested_indices...)
+    AddNestedProperty(usize, usize, Vec<usize>),
+    RemoveNestedProperty(usize, usize, Vec<usize>),
+    UpdateNestedPropertyName(usize, usize, Vec<usize>, String),
+    UpdateNestedPropertyType(usize, usize, Vec<usize>, DataType),
+    UpdateNestedPropertyRequired(usize, usize, Vec<usize>, bool),
+    UpdateNestedPropertyDescription(usize, usize, Vec<usize>, String),
+    UpdateNestedPropertyMinLength(usize, usize, Vec<usize>, String),
+    UpdateNestedPropertyMaxLength(usize, usize, Vec<usize>, String),
+    UpdateNestedPropertyPattern(usize, usize, Vec<usize>, String),
+    UpdateNestedPropertyFormat(usize, usize, Vec<usize>, String),
+    UpdateNestedPropertyMinimum(usize, usize, Vec<usize>, String),
+    UpdateNestedPropertyMaximum(usize, usize, Vec<usize>, String),
 
     // Index operations
     AddIndex(usize),
@@ -112,6 +132,10 @@ pub enum AppMsg {
     
     // Toggle optional fields visibility
     TogglePropertyOptions(usize, usize),
+    
+    // Toggle info tooltip
+    ToggleInfoTooltip(usize),
+    HideInfoTooltip,
 }
 
 impl Component for App {
@@ -132,6 +156,8 @@ impl Component for App {
             validation_requested: false,
             show_compact_popup: false,
             expanded_property_options: std::collections::HashSet::new(),
+            expanded_nested_property_options: std::collections::HashSet::new(),
+            shown_info_tooltip: None,
         }
     }
 
@@ -375,6 +401,136 @@ impl Component for App {
                     } else {
                         Some(content_type)
                     };
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            // Nested property operations
+            AppMsg::AddNestedProperty(doc_index, prop_index, nested_indices) => {
+                if let Some(parent_property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    if parent_property.data_type == DataType::Object {
+                        if parent_property.properties.is_none() {
+                            parent_property.properties = Some(Box::new(Vec::new()));
+                        }
+                        
+                        if let Some(properties) = &mut parent_property.properties {
+                            let position = properties.len() as u64;
+                            let mut new_property = Property::default();
+                            new_property.position = position;
+                            properties.push(new_property);
+                            self.update_json_output();
+                        }
+                    }
+                }
+                true
+            }
+            
+            AppMsg::RemoveNestedProperty(doc_index, prop_index, mut nested_indices) => {
+                if let Some(prop_to_remove_index) = nested_indices.pop() {
+                    if let Some(parent_property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                        if let Some(properties) = &mut parent_property.properties {
+                            if prop_to_remove_index < properties.len() {
+                                properties.remove(prop_to_remove_index);
+                                // Update positions
+                                for (i, prop) in properties.iter_mut().enumerate() {
+                                    prop.position = i as u64;
+                                }
+                                self.update_json_output();
+                            }
+                        }
+                    }
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyName(doc_index, prop_index, nested_indices, name) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.name = name;
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyType(doc_index, prop_index, nested_indices, data_type) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.data_type = data_type;
+                    property.clear_invalid_parameters();
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyRequired(doc_index, prop_index, nested_indices, required) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.required = required;
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyDescription(doc_index, prop_index, nested_indices, description) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.description = if description.is_empty() {
+                        None
+                    } else {
+                        Some(description)
+                    };
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyMinLength(doc_index, prop_index, nested_indices, value) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.min_length = value.parse().ok();
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyMaxLength(doc_index, prop_index, nested_indices, value) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.max_length = value.parse().ok();
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyPattern(doc_index, prop_index, nested_indices, pattern) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.pattern = if pattern.is_empty() {
+                        None
+                    } else {
+                        Some(pattern)
+                    };
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyFormat(doc_index, prop_index, nested_indices, format) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.format = if format.is_empty() {
+                        None
+                    } else {
+                        Some(format)
+                    };
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyMinimum(doc_index, prop_index, nested_indices, value) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.minimum = value.parse().ok();
+                    self.update_json_output();
+                }
+                true
+            }
+            
+            AppMsg::UpdateNestedPropertyMaximum(doc_index, prop_index, nested_indices, value) => {
+                if let Some(property) = self.get_nested_property_mut(doc_index, prop_index, &nested_indices) {
+                    property.maximum = value.parse().ok();
                     self.update_json_output();
                 }
                 true
@@ -630,12 +786,26 @@ impl Component for App {
                 }
                 true
             }
+            
+            AppMsg::ToggleInfoTooltip(doc_index) => {
+                if self.shown_info_tooltip == Some(doc_index) {
+                    self.shown_info_tooltip = None;
+                } else {
+                    self.shown_info_tooltip = Some(doc_index);
+                }
+                true
+            }
+            
+            AppMsg::HideInfoTooltip => {
+                self.shown_info_tooltip = None;
+                true
+            }
         }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <main class="home">
+            <main class="home" onclick={ctx.link().callback(|_| AppMsg::HideInfoTooltip)}>
                 <body>
                     { self.view_header() }
                     { self.view_ai_section(ctx) }
@@ -677,6 +847,21 @@ impl App {
             .get_mut(doc_index)?
             .properties
             .get_mut(prop_index)
+    }
+    
+    /// Helper to get mutable reference to a nested property
+    fn get_nested_property_mut(&mut self, doc_index: usize, prop_index: usize, nested_indices: &[usize]) -> Option<&mut Property> {
+        let mut current_property = self.get_property_mut(doc_index, prop_index)?;
+        
+        for &index in nested_indices {
+            if let Some(properties) = &mut current_property.properties {
+                current_property = properties.get_mut(index)?;
+            } else {
+                return None;
+            }
+        }
+        
+        Some(current_property)
     }
 
     /// Helper to get mutable reference to an index

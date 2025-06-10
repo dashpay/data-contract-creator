@@ -1168,3 +1168,182 @@ footer{
   width: 83%;
 }
 }
+
+// Nested property styles
+.nested-properties {
+  margin-left: 20px;
+  border-left: 2px solid #e0e0e0;
+  padding-left: 20px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.nested-property {
+  position: relative;
+  margin-bottom: 15px;
+  
+  &.nested-property-level-1 {
+    margin-left: 0;
+  }
+  
+  &.nested-property-level-2 {
+    margin-left: 20px;
+    opacity: 0.95;
+  }
+  
+  h5 {
+    font-size: 14px;
+    margin: 10px 0;
+    color: $text-color;
+  }
+}
+
+// Nesting limit message
+.nesting-limit-message {
+  background-color: #f0f8ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  
+  p {
+    margin: 0;
+    color: #0066cc;
+    font-size: 14px;
+    line-height: 1.5;
+    font-style: italic;
+  }
+}
+
+// Header with info icon
+h3.header-with-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  margin-top: 16px;
+  
+  span {
+    flex: 0 0 auto;
+  }
+}
+
+// Label with info icon
+.label-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  
+  span {
+    flex: 0 0 auto;
+  }
+}
+
+// Info icon and tooltip
+.info-icon-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  
+  &.inline {
+    display: inline-flex;
+    margin-left: 4px;
+  }
+  
+  .info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    color: #666666;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    
+    &.small {
+      width: 16px;
+      height: 16px;
+      font-size: 11px;
+    }
+    
+    &:hover {
+      background-color: #e0e0e0;
+      color: #333333;
+    }
+    
+    &:active {
+      background-color: #d0d0d0;
+      color: #000000;
+    }
+  }
+  
+  .info-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    width: 280px;
+    padding: 12px;
+    background-color: white !important;
+    color: #333333 !important;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 300;
+    line-height: 1.5;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    
+    &.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    // Arrow pointing up
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 6px solid #cccccc;
+    }
+    
+    // Inner arrow for white background
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: -1px;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 6px solid white;
+    }
+    
+    p {
+      margin: 0 0 8px 0;
+      color: #333333 !important;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
